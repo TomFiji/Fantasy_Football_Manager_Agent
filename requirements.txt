@@ -1,0 +1,23 @@
+espn-api==0.32.0
+google-genkit
+python-dotenv
+requests
+```
+
+### **.gitignore**
+```
+# Virtual environment
+venv/
+env/
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
