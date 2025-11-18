@@ -20,9 +20,8 @@ league = League(league_id=LEAGUE_ID, year=YEAR, espn_s2=ESPN_S2, swid=SWID)
 
 my_team = league.teams[int(MY_TEAM_ID)-1]
 
-for player in my_team.roster:
-    if (player.name == 'Juwan Johnson'):
-        last_game_points = player.stats[11].get('points', 0.0) if len(player.stats) > 11 else 0.0
-        print(f"Name: {player.name}, Position: {player.position}, Injury status: {player.injuryStatus}, Total points scored: {player.stats[0]['points']}, Points scored last game: {last_game_points}")
+# for player in my_team.roster:
+#     if (player.name == 'Nico Collins'):
+#         print(f"Name: {player.name}, Stats: {player.stats}")
 
 #{'Player was on bye' if player.active_status == 'bye' else player.stats[11]['points']}    
