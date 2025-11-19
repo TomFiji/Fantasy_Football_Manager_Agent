@@ -3,6 +3,7 @@ import os
 import sys
 import asyncio
 import base64
+import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
 
@@ -50,7 +51,76 @@ retry_config = types.HttpRetryOptions(
 
 # print(my_wr_players)
 # def get_wr_stats() -> dict:
+def get_aggregate_stats(player: str):
+    p = league.player_info(name=player)
+    stats = p.stats.get(0, "Not available")
+    return{
+        "Season Total Receptions": stats['breakdown'].get('receivingReceptions',0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total Receiving Yards": math.ceil(stats['breakdown'].get('receivingYards', 0)*stats['breakdown'].get('210', 0)),
+        "Season Total Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
+        "Season Total Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total First Downs": stats['breakdown'].get('213', 0),
+        "Season Total 100-199 Receiving Yard Games": stats['breakdown'].get('receiving100To199YardGame',0),
+        "Season Total Touchdowns with 0-9 Yard Reception": stats['breakdown'].get('183',0),
+        "Season Total Touchdowns with 10-19 Yard Reception": stats['breakdown'].get('184',0),
+        "Season Total Touchdowns with 20-29 Yard Reception": stats['breakdown'].get('185',0),
+        "Season Total Touchdowns with 30-39 Yard Reception": stats['breakdown'].get('186',0),
+        "Season Total Touchdowns with 40-49 Yard Reception": (stats['breakdown'].get('receiving40PlusYardTD',0)-stats['breakdown'].get('receiving50PlusYardTD', 0)),
+        "Season Total Touchdowns with 50+ Yard Reception": stats['breakdown'].get('receiving50PlusYardTD', 0),
+        "Every 5 Receptions": stats['breakdown'].get('54',0),
+        "Every 10 Receptions": stats['breakdown'].get('55',0),
+        "Catch Rate Percentage": round((stats['breakdown']['receivingReceptions']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2),
+        "Fantasy Points Per Target": round((stats['points']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2)   
+    }
+
+def get_average_stats(player: str):
+    p = league.player_info(name=player)
+    stats = p.stats.get(0, "Not available")
+    return{
+        "Season Total Receptions": stats['breakdown'].get('receivingReceptions',0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total Receiving Yards": math.ceil(stats['breakdown'].get('receivingYards', 0)*stats['breakdown'].get('210', 0)),
+        "Season Total Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
+        "Season Total Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total First Downs": stats['breakdown'].get('213', 0),
+        "Season Total 100-199 Receiving Yard Games": stats['breakdown'].get('receiving100To199YardGame',0),
+        "Season Total Touchdowns with 0-9 Yard Reception": stats['breakdown'].get('183',0),
+        "Season Total Touchdowns with 10-19 Yard Reception": stats['breakdown'].get('184',0),
+        "Season Total Touchdowns with 20-29 Yard Reception": stats['breakdown'].get('185',0),
+        "Season Total Touchdowns with 30-39 Yard Reception": stats['breakdown'].get('186',0),
+        "Season Total Touchdowns with 40-49 Yard Reception": (stats['breakdown'].get('receiving40PlusYardTD',0)-stats['breakdown'].get('receiving50PlusYardTD', 0)),
+        "Season Total Touchdowns with 50+ Yard Reception": stats['breakdown'].get('receiving50PlusYardTD', 0),
+        "Every 5 Receptions": stats['breakdown'].get('54',0),
+        "Every 10 Receptions": stats['breakdown'].get('55',0),
+        "Catch Rate Percentage": round((stats['breakdown']['receivingReceptions']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2),
+        "Fantasy Points Per Target": round((stats['points']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2)   
+    }
     
-player = league.player_info(name="Nico Collins")
-print("\Aggregate Stats: ", player.stats.get(0, "Not available")) 
-print("\nWeek 3 Stats: ", player.stats.get(3, "Not available"))    
+def get_weekly_stats(player: str):
+    p = league.player_info(name=player)
+    stats = p.stats.get(0, "Not available")
+    return{
+        "Season Total Receptions": stats['breakdown'].get('receivingReceptions',0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total Receiving Yards": math.ceil(stats['breakdown'].get('receivingYards', 0)*stats['breakdown'].get('210', 0)),
+        "Season Total Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
+        "Season Total Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total First Downs": stats['breakdown'].get('213', 0),
+        "Season Total 100-199 Receiving Yard Games": stats['breakdown'].get('receiving100To199YardGame',0),
+        "Season Total Touchdowns with 0-9 Yard Reception": stats['breakdown'].get('183',0),
+        "Season Total Touchdowns with 10-19 Yard Reception": stats['breakdown'].get('184',0),
+        "Season Total Touchdowns with 20-29 Yard Reception": stats['breakdown'].get('185',0),
+        "Season Total Touchdowns with 30-39 Yard Reception": stats['breakdown'].get('186',0),
+        "Season Total Touchdowns with 40-49 Yard Reception": (stats['breakdown'].get('receiving40PlusYardTD',0)-stats['breakdown'].get('receiving50PlusYardTD', 0)),
+        "Season Total Touchdowns with 50+ Yard Reception": stats['breakdown'].get('receiving50PlusYardTD', 0),
+        "Every 5 Receptions": stats['breakdown'].get('54',0),
+        "Every 10 Receptions": stats['breakdown'].get('55',0),
+        "Catch Rate Percentage": round((stats['breakdown']['receivingReceptions']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2),
+        "Fantasy Points Per Target": round((stats['points']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2)   
+    }        
+
+print(get_aggregate_stats("Nico Collins"))
