@@ -42,10 +42,10 @@ for matchup in box_scores:
     if matchup.home_team == my_team or matchup.away_team == my_team:
         my_lineup = matchup.home_lineup if matchup.home_team == my_team else matchup.away_lineup
 
-my_wr_players = []
+my_rb_players = []
 for player in my_team.roster:
     if (player.position == 'RB' and player.on_bye_week==False):
-        my_wr_players.append(player)
+        my_rb_players.append(player)
 
 def get_RB_aggregate_stats(player: str):
     p = league.player_info(name=player)

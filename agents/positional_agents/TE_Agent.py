@@ -37,7 +37,78 @@ retry_config = types.HttpRetryOptions(
     http_status_codes=[429, 500, 503, 504],  # Retry on these HTTP errors
 )
 
+box_scores = league.box_scores(int(league.current_week))
+for matchup in box_scores:
+    if matchup.home_team == my_team or matchup.away_team == my_team:
+        my_lineup = matchup.home_lineup if matchup.home_team == my_team else matchup.away_lineup
 
+my_te_players = []
+for player in my_team.roster:
+    if (player.position == 'TE' and player.on_bye_week==False):
+        my_te_players.append(player)
+
+
+def get_TE_aggregate_stats(player: str):
+    p = league.player_info(name=player)
+    stats = p.stats.get(0, "Not available")
+    return{
+        "Season Total Receptions": stats['breakdown'].get('receivingReceptions',0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total Receiving Yards": math.ceil(stats['breakdown'].get('receivingYards', 0)*stats['breakdown'].get('210', 0)),
+        "Season Total Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
+        "Season Total Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
+        "Season Total Receiving First Downs": stats['breakdown'].get('213', 0),
+        "Season Total 100-199 Receiving Yard Games": stats['breakdown'].get('receiving100To199YardGame',0),
+        "Season Total Touchdowns with 0-9 Yard Reception": stats['breakdown'].get('183',0),
+        "Season Total Touchdowns with 10-19 Yard Reception": stats['breakdown'].get('184',0),
+        "Season Total Touchdowns with 20-29 Yard Reception": stats['breakdown'].get('185',0),
+        "Season Total Touchdowns with 30-39 Yard Reception": stats['breakdown'].get('186',0),
+        "Season Total Touchdowns with 40-49 Yard Reception": (stats['breakdown'].get('receiving40PlusYardTD',0)-stats['breakdown'].get('receiving50PlusYardTD', 0)),
+        "Season Total Touchdowns with 50+ Yard Reception": stats['breakdown'].get('receiving50PlusYardTD', 0),
+        "Every 5 Receptions": stats['breakdown'].get('54',0),
+        "Every 10 Receptions": stats['breakdown'].get('55',0),
+        "Every 5 Receiving Yards": stats['breakdown'].get('47', 0),
+        "Every 10 Receiving Yards": stats['breakdown'].get('48', 0),
+        "Every 20 Receiving Yards": stats['breakdown'].get('49', 0),
+        "Every 25 Receiving Yards": stats['breakdown'].get('50', 0),
+        "Every 50 Receiving Yards": stats['breakdown'].get('51', 0),
+        "Every 100 Receiving Yards": stats['breakdown'].get('52', 0),
+        "Catch Rate Percentage": round((stats['breakdown']['receivingReceptions']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2),
+        "Fantasy Points Per Target": round((stats['points']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2),
+        "Season Total Receiving 2 Point Conversions": stats['breakdown']['receiving 2PtConversions'], 
+        "Season Total Fumbles": stats['breakdown'].get('fumbles'),
+        "Season Total Receiving Fumbles": stats['breakdown'].get('67', 0),
+        "Season Total Receiving Fumbles Lost": stats['breakdown'].get('71', 0),
+        "Season Total Rushing Attempts": stats['breakdown'].get('rushingAttempts', 0),
+        "Season Total Rushing Yards": math.ceil(stats['breakdown'].get('rushingYards', 0)*stats['breakdown'].get('210', 0)),
+        "Season Total Rushing Touchdowns": stats['breakdown'].get('rushingTouchdowns', 0),
+        "Total Games Played": stats['breakdown'].get('210', 0)
+    }
+    
+def get_TE_aggregate_stats(player: str):
+    p = league.player_info(name=player)
+    stats = p.stats.get(0, "Not available")
+    weeksPlayed = stats['breakdown']['210']
+    return{
+        "Season Average Receptions": stats['breakdown'].get('receivingReceptions',0)/weeksPlayed,
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0)/weeksPlayed,
+        "Season Total Receiving Yards": stats['breakdown'].get('receivingYards', 0),
+        "Season Total Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0)/weeksPlayed,
+        "Season Total Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0)/weeksPlayed,
+        "Season Total Targets": stats['breakdown'].get('receivingTargets', 0)/weeksPlayed,
+        "Receiving Yards Per Reception": stats['breakdown'].get('receivingYardsPerReception', 0),
+        "Season Average Receiving First Downs": stats['breakdown'].get('213', 0)/weeksPlayed,
+        "Season Average 100-199 Receiving Yard Games": stats['breakdown'].get('receiving100To199YardGame',0)/weeksPlayed,
+        "Season Average Receiving 2 Point Conversions": stats['breakdown'].get('receiving 2PtConversions', 0)/weeksPlayed, 
+        "Season Average Fumbles": stats['breakdown'].get('fumbles')/weeksPlayed,
+        "Season Average Receiving Fumbles": stats['breakdown'].get('67', 0),
+        "Season Average Receiving Fumbles Lost": stats['breakdown'].get('71', 0),
+        "Season Average Rushing Attempts": stats['breakdown'].get('rushingAttempts', 0),
+        "Season Average Rushing Yards": math.ceil(stats['breakdown'].get('rushingYards', 0)*stats['breakdown'].get('210', 0)),
+        "Season Average Rushing Touchdowns": stats['breakdown'].get('rushingTouchdowns', 0),
+    }
+    
 def get_TE_aggregate_stats(player: str):
     p = league.player_info(name=player)
     stats = p.stats.get(0, "Not available")
@@ -75,5 +146,4 @@ def get_TE_aggregate_stats(player: str):
         "Season Total Rushing Yards": math.ceil(stats['breakdown'].get('rushingYards', 0)*stats['breakdown'].get('210', 0)),
         "Season Total Rushing Touchdowns": stats['breakdown'].get('rushingTouchdowns', 0),
         "Total Games Played": stats['breakdown'].get('210', 0)
-
-    }
+    }        

@@ -68,8 +68,8 @@ def get_WR_aggregate_stats(player: str):
         "Season Total Touchdowns with 50+ Yard Reception": stats['breakdown'].get('receiving50PlusYardTD', 0),
         "Every 5 Receptions": stats['breakdown'].get('54',0),
         "Every 10 Receptions": stats['breakdown'].get('55',0),
-        "Catch Rate Percentage": round((stats['breakdown']['receivingReceptions']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2),
-        "Fantasy Points Per Target": round((stats['points']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2)   
+        "Catch Rate Percentage": round((stats['breakdown'].get('receivingReceptions' ,0)/stats['breakdown'].get('receivingTargets' ,0) if stats['breakdown'].get('receivingTargets' ,0) != 0 else 0),2),
+        "Fantasy Points Per Target": round((stats.get('points' ,0)/stats['breakdown'].get('receivingTargets', 0) if stats['breakdown'].get('receivingTargets' ,0) != 0 else 0),2)   
     }
 
 def get_average_stats(player: str):
