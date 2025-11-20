@@ -60,6 +60,7 @@ def get_WR_aggregate_stats(player: str):
         "Season Total Receiving Yards": math.ceil(stats['breakdown'].get('receivingYards', 0)*stats['breakdown'].get('210', 0)),
         "Season Total Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
         "Season Total Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
+        "Receiving Yards Per Reception": stats['breakdown'].get('receivingYardsPerReception', 0),
         "Season Total Targets": stats['breakdown'].get('receivingTargets', 0),
         "Season Total First Downs": stats['breakdown'].get('213', 0),
         "Season Total 100-199 Receiving Yard Games": stats['breakdown'].get('receiving100To199YardGame',0),
