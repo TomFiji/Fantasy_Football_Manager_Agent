@@ -46,12 +46,12 @@ retry_config = types.HttpRetryOptions(
 
 # my_wr_players = []
 # for player in my_team.roster:
-#     if (player.position == 'WR'):
+#     if (player.position == 'WR' AND MAKE SURE PLAYER IS NOT ON BYE):
 #         my_wr_players.append(player)
 
 # print(my_wr_players)
 # def get_wr_stats() -> dict:
-def get_aggregate_stats(player: str):
+def get_WR_aggregate_stats(player: str):
     p = league.player_info(name=player)
     stats = p.stats.get(0, "Not available")
     return{
@@ -123,4 +123,8 @@ def get_weekly_stats(player: str):
         "Fantasy Points Per Target": round((stats['points']/stats['breakdown']['receivingTargets'] if stats['breakdown']['receivingTargets'] != 0 else 0),2)   
     }        
 
-print(get_aggregate_stats("Nico Collins"))
+p = league.player_info(name="Mark Andrews")
+stats = p.stats.get(0, "Not available")
+week6stats = p.stats.get(10, "Not available")
+print(stats)
+#print(week6stats)
