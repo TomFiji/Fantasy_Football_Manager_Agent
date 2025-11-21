@@ -47,7 +47,7 @@ for matchup in box_scores:
 my_wr_players = []
 for player in my_lineup:
     if (player.position == 'WR' and player.on_bye_week==False):
-        my_wr_players.append({"name": player.name, "player_id": player.playerId})
+        my_wr_players.append({"name": player.name, "player_id": player.playerId, "Opposing team": player.pro_opponent, "Opposing team's defensive rank against WRs": player.pro_pos_rank})
 
 
 def get_WR_aggregate_stats(player_id: int):
@@ -144,6 +144,7 @@ def get_player_weekly_stats(player_id: int, week: int):
     else:
         return response.data[0]['player_name'] 
 
-print(get_WR_week_stats(4258173, "Nico Collins", 10))    
+#print(get_WR_week_stats(4258173, "Nico Collins", 10))    
+print(my_wr_players)
 
              
