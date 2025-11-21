@@ -19,6 +19,9 @@ MY_TEAM_ID = os.environ['MY_TEAM_ID']
 league = League(league_id=LEAGUE_ID, year=YEAR, espn_s2=ESPN_S2, swid=SWID)
 
 my_team = league.teams[int(MY_TEAM_ID)-1]
+p = league.player_info(playerId=4258173)
+stats = p.stats.get(11, "Not available")
+#print(stats)
 for player in my_team.roster:
     pass
     #print(f"Name: {player.name} Status: {player.active_status}")

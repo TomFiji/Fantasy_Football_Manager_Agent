@@ -90,27 +90,30 @@ def get_QB_average_stats(player: str):
     p = league.player_info(name=player)
     stats = p.stats.get(0, "Not available")
     weeksPlayed = stats['breakdown']['210']
-    return{
-        "Season Average Passing Attempts": stats['breakdown'].get('passingAttempts',0)/weeksPlayed,
-        "Season Average Passing Completions": stats['breakdown'].get('passingCompletions',0)/weeksPlayed,
-        "Season Average Passing Completion Percentage": stats['breakdown'].get('passingCompletionPercentage',0)/weeksPlayed,
-        "Season Average Every 5 Pass Completions": stats['breakdown'].get('11', 0)/weeksPlayed,
-        "Season Average Every 10 Pass Completions": stats['breakdown'].get('12', 0)/weeksPlayed,
-        "Season Average Passing Yards": stats['breakdown'].get('passingYards', 0),
-        "Season Average Games with 300-399 Passing Yards": stats['breakdown'].get('passing300To399YardGame', 0)/weeksPlayed,
-        "Season Average Games with 400+ Passing Yards": stats['breakdown'].get('passing400PlusYardGame', 0)/weeksPlayed,
-        "Season Average Passing Touchdowns": stats['breakdown'].get('passingTouchdowns',0)/weeksPlayed,
-        "Season Average Passing 2 Point Conversions": stats['breakdown'].get('passing2PtConversions' ,0)/weeksPlayed,
-        "Season Average Rushing 2 Point Conversions": stats['breakdown'].get('rushing2PtConversions' ,0)/weeksPlayed,
-        "Season Average Passing Interceptions": stats['breakdown'].get('passingInterceptions' ,0)/weeksPlayed,
-        "Season Average Times Sacked Passing": stats['breakdown'].get('passingTimesSacked' ,0)/weeksPlayed,
-        "Season Average Passing Fumbles": stats['breakdown'].get('65' ,0)/weeksPlayed,
-        "Season Average Turnovers": stats['breakdown'].get('turnovers' ,0)/weeksPlayed,
-        "Season Average Passing First Downs": stats['breakdown'].get('211' ,0)/weeksPlayed,
-        "Season Average Rush Attempts": stats['breakdown'].get('rushingAttempts' ,0)/weeksPlayed,
-        "Season Average Rushing Yards": stats['breakdown'].get('rushingYards', 0),
-        "Season Average Rushing Touchdowns": stats['breakdown'].get('rushingTouchdowns' ,0)/weeksPlayed,
-    }
+    if (weeksPlayed == 0):
+        return "No games played"
+    else:
+        return{
+            "Season Average Passing Attempts": round(stats['breakdown'].get('passingAttempts',0)/weeksPlayed, 2),
+            "Season Average Passing Completions": round(stats['breakdown'].get('passingCompletions',0)/weeksPlayed, 2),
+            "Season Average Passing Completion Percentage": round(stats['breakdown'].get('passingCompletionPercentage',0)/weeksPlayed, 2),
+            "Season Average Every 5 Pass Completions": round(stats['breakdown'].get('11', 0)/weeksPlayed, 2),
+            "Season Average Every 10 Pass Completions": round(stats['breakdown'].get('12', 0)/weeksPlayed, 2),
+            "Season Average Passing Yards": round(stats['breakdown'].get('passingYards', 0), 2),
+            "Season Average Games with 300-399 Passing Yards": round(stats['breakdown'].get('passing300To399YardGame', 0)/weeksPlayed, 2),
+            "Season Average Games with 400+ Passing Yards": round(stats['breakdown'].get('passing400PlusYardGame', 0)/weeksPlayed, 2),
+            "Season Average Passing Touchdowns": round(stats['breakdown'].get('passingTouchdowns',0)/weeksPlayed, 2),
+            "Season Average Passing 2 Point Conversions": round(stats['breakdown'].get('passing2PtConversions' ,0)/weeksPlayed, 2),
+            "Season Average Rushing 2 Point Conversions": round(stats['breakdown'].get('rushing2PtConversions' ,0)/weeksPlayed, 2),
+            "Season Average Passing Interceptions": round(stats['breakdown'].get('passingInterceptions' ,0)/weeksPlayed, 2),
+            "Season Average Times Sacked Passing": round(stats['breakdown'].get('passingTimesSacked' ,0)/weeksPlayed, 2),
+            "Season Average Passing Fumbles": round(stats['breakdown'].get('65' ,0)/weeksPlayed, 2),
+            "Season Average Turnovers": round(stats['breakdown'].get('turnovers' ,0)/weeksPlayed, 2),
+            "Season Average Passing First Downs": round(stats['breakdown'].get('211' ,0)/weeksPlayed, 2),
+            "Season Average Rush Attempts": round(stats['breakdown'].get('rushingAttempts' ,0)/weeksPlayed, 2),
+            "Season Average Rushing Yards": round(stats['breakdown'].get('rushingYards', 0), 2),
+            "Season Average Rushing Touchdowns": round(stats['breakdown'].get('rushingTouchdowns' ,0)/weeksPlayed, 2),
+        }
 
 def get_QB_week_stats(player: str, week: int):
     p = league.player_info(name=player)

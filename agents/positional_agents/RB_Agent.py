@@ -78,16 +78,16 @@ def get_RB_average_stats(player: str):
         return "No games played"
     else:
         return{
-            "Season Average Rushing Attempts": stats['breakdown'].get('rushingAttempts',0)/weeksPlayed,
-            "Season Average Rushing Yards Per Attempt": stats['breakdown'].get('rushingYardsPerAttempt',0),
-            "Season Average Receptions": stats['breakdown'].get('receivingReceptions',0)/weeksPlayed,
-            "Season Average Targets": stats['breakdown'].get('receivingTargets', 0)/weeksPlayed,
-            "Season Average Rushing Yards": stats['breakdown'].get('rushingYards', 0),
-            "Season Average Receiving Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0)/weeksPlayed,
-            "Season Average Rushing Touchdowns": stats['breakdown'].get('rushingTouchdowns', 0)/weeksPlayed,
-            "Season Average Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0)/weeksPlayed,
-            "Season Average Fumbles": stats['breakdown'].get('fumbles', 0)/weeksPlayed,
-            "Season Average First Downs": stats['breakdown'].get('213', 0)/weeksPlayed,
+            "Season Average Rushing Attempts": round(stats['breakdown'].get('rushingAttempts',0)/weeksPlayed, 2),
+            "Season Average Rushing Yards Per Attempt": round(stats['breakdown'].get('rushingYardsPerAttempt',0), 2),
+            "Season Average Receptions": round(stats['breakdown'].get('receivingReceptions',0)/weeksPlayed, 2),
+            "Season Average Targets": round(stats['breakdown'].get('receivingTargets', 0)/weeksPlayed, 2),
+            "Season Average Rushing Yards": round(stats['breakdown'].get('rushingYards', 0), 2),
+            "Season Average Receiving Touchdowns": round(stats['breakdown'].get('receivingTouchdowns', 0)/weeksPlayed, 2),
+            "Season Average Rushing Touchdowns": round(stats['breakdown'].get('rushingTouchdowns', 0)/weeksPlayed, 2),
+            "Season Average Yards After Catch": round(stats['breakdown'].get('receivingYardsAfterCatch', 0)/weeksPlayed, 2),
+            "Season Average Fumbles": round(stats['breakdown'].get('fumbles', 0)/weeksPlayed, 2),
+            "Season Average First Downs": round(stats['breakdown'].get('213', 0)/weeksPlayed, 2),
         }
 
 def get_RB_week_stats(player: str, week: int):
