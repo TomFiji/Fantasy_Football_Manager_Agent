@@ -21,6 +21,9 @@ from google.adk.agents import LlmAgent
 from google.adk.models.google_llm import Gemini
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.adk.tools import google_search
+from google.adk.tools.agent_tool import AgentTool
+from google.adk.runners import InMemoryRunner
 
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.tool_context import ToolContext
@@ -47,7 +50,7 @@ for matchup in box_scores:
 my_wr_players = []
 for player in my_lineup:
     if (player.position == 'WR' and player.on_bye_week==False):
-        my_wr_players.append({"name": player.name, "player_id": player.playerId, "Opposing team": player.pro_opponent, "Opposing team's defensive rank against WRs": player.pro_pos_rank})
+        my_wr_players.append({"name": player.name, "player_id": player.playerId, "Opposing team": player.pro_opponent, "Opposing team's defensive rank against WRs": player.pro_pos_rank, "Injury Status": player.injuryStatus})
 
 
 def get_WR_aggregate_stats(player_id: int):
@@ -122,7 +125,7 @@ def get_WR_week_stats(player_id: int, player_name: str, week: int):
         .insert({"player_id": player_id, "week": week, "player_name": player_name, "stats_breakdown": data, "points": stats.get('points', 0) if stats != 'Not available' else 0})
         .execute()
     )
-    return response.data[0]  
+    return response.data[0]
     
 def get_all_stats(player_id):
     print(get_WR_aggregate_stats(player_id))
@@ -142,15 +145,33 @@ def get_player_weekly_stats(player_id: int, player_name: str, week: int):
         return response.data[0]
 
 wr_agent = LlmAgent(
-    model=Gemini(model="gemini-2.5-flash-lite", retry_options=retry_config)
     name="wr_agent",
+    model=Gemini(model="gemini-2.5-flash-exp", retry_options=retry_config),
     instruction="""You are the wide receiver coordinator of my fantasy football team.
     
     Your job is to choose to pick the 2 best options from a list of wide receivers I give you. For each player in the 'my_wr_players' list you will:
     1. Call 'get_all_stats' using the value found in player_id as the parameter to access
     2. Call 'get_player_weekly_stats' for each player's previous 3 weeks to league.current_week
-    """
-    tools=[FunctionTool(get_all_stats), FunctionTool(get_player_weekly_stats)]
+        a. If one of those week's stat_breakdown returns that the player was on BYE or on bench, pull up the next most recent week to analyze
+        b. Do not analyze the week a player was on the bench or BYE
+    3. Analyze each player's stats from 'get_all_stats' and 'get_player_weekly_stats' and grade them on a scale of 0-100 based on the stats given to you of that player
+    4. For each player in 'my_wr_players', also take into consideration their injury status and use the google_search tool to do more analysis
+    5. For each grade you give each player, also take into consideration their 'Opposing team' and 'Opposing team's defensive rank against WRs'
+    
+    **Output Format**
+    - Rank players from 1 to however many wide receivers are on the roster
+    - For top 2: "START" with reason
+    - For others: "SIT" with brief explanation
+    - Include key stats supporting each decision
+    - Note any concerns (e.g. TD-dependent, low floor, etc.)
+    """,
+    tools=[get_all_stats, get_player_weekly_stats, google_search]
 )
 
-             
+wr_runner = InMemoryRunner(agent=wr_agent)
+
+async def test_agent():
+    response = await wr_runner.run_debug("What wide receivers should I start this week?")
+    print(response.text)
+
+asyncio.run(test_agent())    
