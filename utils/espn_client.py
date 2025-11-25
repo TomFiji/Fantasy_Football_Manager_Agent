@@ -24,10 +24,11 @@ stats = p.stats.get(11, "Not available")
 #print(stats)
 for player in my_team.roster:
     pass
-    #print(f"Name: {player.name}, ID: {player.playerId}")
+   # print(f"Name: {player.name}, Team: {player.proTeam}")
     #print(f"Name: {player.name} Status: {player.active_status}")
 # for player in my_team.roster:
 #     if (player.name == 'Nico Collins'):
 #         print(f"Name: {player.name}, Stats: {player.stats}")
 
 #{'Player was on bye' if player.active_status == 'bye' else player.stats[11]['points']}    
+#print(league.current_week)
