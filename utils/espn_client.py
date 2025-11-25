@@ -24,6 +24,7 @@ stats = p.stats.get(11, "Not available")
 #print(stats)
 for player in my_team.roster:
     pass
+    #print(f"Name: {player.name}, ID: {player.playerId}")
     #print(f"Name: {player.name} Status: {player.active_status}")
 # for player in my_team.roster:
 #     if (player.name == 'Nico Collins'):

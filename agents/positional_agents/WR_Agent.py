@@ -105,7 +105,6 @@ def get_WR_week_stats(player_id: int, player_name: str, week: int):
             f"Week {week} Receiving Yards": stats['breakdown'].get('receivingYards', 0),
             f"Week {week} Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
             f"Week {week} Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
-            f"Week {week} Targets": stats['breakdown'].get('receivingTargets', 0),
             f"Week {week} First Downs": stats['breakdown'].get('213', 0),
             f"Week {week} Touchdowns with 0-9 Yard Reception": stats['breakdown'].get('183',0),
             f"Week {week} Touchdowns with 10-19 Yard Reception": stats['breakdown'].get('184',0),
@@ -120,17 +119,16 @@ def get_WR_week_stats(player_id: int, player_name: str, week: int):
         }
     response = (
         supabase.table("player_weekly_stats")
-        .insert({"player_id": id, "week": week, "player_name": player_name, "stats_breakdown": data, "points": stats.get('points', 0)})
+        .insert({"player_id": player_id, "week": week, "player_name": player_name, "stats_breakdown": data, "points": stats.get('points', 0) if stats != 'Not available' else 0})
         .execute()
     )
-    return response  
+    return response.data[0]  
     
-def get_all_stats(player):
-    print(get_WR_aggregate_stats(player.name))
-    print(get_WR_average_stats(player.name))
-    print(get_WR_week_stats(player.name, player.id, league.current_week-1))
+def get_all_stats(player_id):
+    print(get_WR_aggregate_stats(player_id))
+    print(get_WR_average_stats(player_id))
 
-def get_player_weekly_stats(player_id: int, week: int):
+def get_player_weekly_stats(player_id: int, player_name: str, week: int):
     response = (
         supabase.table("player_weekly_stats")
         .select("*")
@@ -139,12 +137,20 @@ def get_player_weekly_stats(player_id: int, week: int):
         .execute()
     )
     if (response.data==[]):
-        print("Nothing to show here")
-        return None
+        return get_WR_week_stats(player_id, player_name, week)
     else:
-        return response.data[0]['player_name'] 
+        return response.data[0]
 
-#print(get_WR_week_stats(4258173, "Nico Collins", 10))    
-print(my_wr_players)
+wr_agent = LlmAgent(
+    model=Gemini(model="gemini-2.5-flash-lite", retry_options=retry_config)
+    name="wr_agent",
+    instruction="""You are the wide receiver coordinator of my fantasy football team.
+    
+    Your job is to choose to pick the 2 best options from a list of wide receivers I give you. For each player in the 'my_wr_players' list you will:
+    1. Call 'get_all_stats' using the value found in player_id as the parameter to access
+    2. Call 'get_player_weekly_stats' for each player's previous 3 weeks to league.current_week
+    """
+    tools=[FunctionTool(get_all_stats), FunctionTool(get_player_weekly_stats)]
+)
 
              
