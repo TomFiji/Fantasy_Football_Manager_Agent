@@ -46,7 +46,7 @@ def search_web(query: str) -> str:
         return f"Error performing search: {e}"
     
    
-def post_WR_week_stats(player, position: str):
+def post_week_stats(player, position: str):
     p = league.player_info(playerId=player["player_id"])
     if league.current_week<5:
         week_range = range(1, league.current_week)
@@ -64,12 +64,12 @@ def post_WR_week_stats(player, position: str):
             pass
         else:
             stats = p.stats.get(week, "Not available")
-            breakdown = stats['breakdown']
-            points = stats['points']
             data = {}
             if (stats == "Not available"): 
                 data[f"Week {week} Stats"] = "Didn't play because they were benched or on BYE week."
             else:
+                breakdown = stats['breakdown']
+                points = stats['points']
                 for display_name, stat_key in POSITION_STATS[position]:
                     data[f"Week {week} {display_name}"] = breakdown.get(stat_key, 0)
                 if position == 'WR':
@@ -118,7 +118,7 @@ def get_player_weekly_stats(player_id: int, week: int) -> dict:
         .eq("week", week)
         .execute()
     )
-    return {"Stats": {response.data[0]['stats_breakdown']}, f"{week} Points": {response.data[0]['points']}}
+    return response.data[0]['stats_breakdown']
   
 POSITION_STATS = {
     'WR': [

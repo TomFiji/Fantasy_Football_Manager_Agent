@@ -6,7 +6,7 @@ import base64
 import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
-from utils.shared_tools import get_current_week, get_player_weekly_stats, search_web
+from utils.shared_tools import get_current_week, get_player_weekly_stats, search_web, get_player_list_info, post_week_stats
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from supabase_client import supabase
 
@@ -31,6 +31,7 @@ from mcp import StdioServerParameters
 
 from google.adk.apps.app import App, ResumabilityConfig
 from google.adk.tools.function_tool import FunctionTool
+from google.adk.runners import InMemoryRunner
 
 
 
@@ -41,15 +42,7 @@ retry_config = types.HttpRetryOptions(
     http_status_codes=[429, 500, 503, 504],  # Retry on these HTTP errors
 )
 
-box_scores = league.box_scores(int(league.current_week)-3)
-for matchup in box_scores:
-    if matchup.home_team == my_team or matchup.away_team == my_team:
-        my_lineup = matchup.home_lineup if matchup.home_team == my_team else matchup.away_lineup
-
-my_rb_players = []
-for player in my_team.roster:
-    if (player.position == 'RB' and player.on_bye_week==False):
-        my_rb_players.append(player)
+rb_list = get_player_list_info('RB')
 
 def get_RB_aggregate_stats(player: str):
     p = league.player_info(name=player)
@@ -94,25 +87,46 @@ def get_RB_average_stats(player: str):
             "Season Average First Downs": round(stats['breakdown'].get('213', 0)/weeksPlayed, 2),
         }
 
-def get_RB_week_stats(player: str, week: int):
-    p = league.player_info(name=player)
-    stats = p.stats.get(week, "Not available")
-    return{
-        f"Week {week} Rushing Attempts": stats['breakdown'].get('rushingAttempts',0),
-        f"Week {week} Rushing Yards Per Attempt": stats['breakdown'].get('rushingYardsPerAttempt',0),
-        f"Week {week} Receptions": stats['breakdown'].get('receivingReceptions',0),
-        f"Week {week} Targets": stats['breakdown'].get('receivingTargets', 0),
-        f"Week {week} Rushing Yards": stats['breakdown'].get('rushingYards', 0),
-        f"Week {week} Receiving Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
-        f"Week {week} Rushing Touchdowns": stats['breakdown'].get('rushingTouchdowns', 0),
-        f"Week {week} Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
-        f"Week {week} Fumbles": stats['breakdown'].get('fumbles', 0),
-        f"Week {week} First Downs": stats['breakdown'].get('213', 0),
-        f"Week {week} 100-199 Rushing Yard Game": stats['breakdown'].get('rushing100To199YardGame',0),
-        f"Week {week} 200+ Rushing Yard Game": stats['breakdown'].get('rushing200PlusYardGame',0),
-        f"Week {week} Touchdowns with 40-49 Yards Rushing": (stats['breakdown'].get('rushing40PlusYardTD',0)-stats['breakdown'].get('rushing50PlusYardTD', 0)),
-        f"Week {week} Touchdowns with 50+ Yards Rushing": stats['breakdown'].get('rushing50PlusYardTD', 0),
-        f"Week {week} Every 5 Receptions": stats['breakdown'].get('54',0),
-        f"Week {week} Every 10 Receptions": stats['breakdown'].get('55',0),
-    }        
-       
+for player in rb_list:
+    post_week_stats(player, 'RB')      
+
+rb_agent = LlmAgent(
+    name="wr_agent",
+    model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
+    instruction=f"""You are the wide receiver coordinator of my fantasy football team.
+    
+    Your job is to choose to pick the 2 best options from a list of wide receivers I give you. For each player in {rb_list} you will:
+    1. Call 'get_RB_aggregate_stats' using the value found in player_id as the parameter to access the data
+    2. Call 'get_RB_average_stats' using the value found in player_id as the parameter to access the data
+    2. Call 'get_player_weekly_stats' 4 times for each player's PREVIOUS 4 weeks to 'get_current_week'. DO NOT call get_current_week's stats, it will result in an error.
+        a. For example, 'get_current_week' returns 11, pull up weeks 7-10
+        b. If 'get_current_week' is less than 5, only pull up the weeks previous to that. DO NOT pass through 0 or any negative numbers through the function
+        a. Do not analyze the week a player was on the bench or BYE
+    3. Analyze each player's stats from the multiple dictionaries you just pulled and grade them on a scale of 0-100 based on the stats given to you of that player
+    4. For each player, also take into consideration their injury status and use 'search_web' to do more analysis if injury status isn't 'ACTIVE' and change their grade accordingly
+    5. For each player, also take into consideration their 'Opposing team' and 'Opposing team's defensive rank against WRs' from {rb_list} and change their grade accordingly
+    6. For each player, use 'search_web' to look up the strength of their team's offensive line and put emphasis on this for their grade since a good offensive line is a must for a good running performance
+    7. For each player, grab their 'Team' from {rb_list} and use 'search_web' to see if there are any other injured wide receivers on the team that are out or wide receivers coming back. Use this information to update that player's grade.
+    
+    **Output Format**
+    - Rank players from 1 to however many wide receivers are on the roster and the grade you gave them
+    - For top 2: "START" with reason
+    - For others: "SIT" with brief explanation
+    - Include key stats supporting each decision
+    - Note any concerns (e.g. TD-dependent, low floor, wide receiver room, o-line health, vegas odds, etc.)
+    """,
+    tools=[
+        FunctionTool(get_current_week),
+        FunctionTool(get_RB_aggregate_stats),
+        FunctionTool(get_RB_average_stats),
+        FunctionTool(get_player_weekly_stats),
+        FunctionTool(search_web)
+    ]
+)
+
+rb_runner = InMemoryRunner(agent=rb_agent)
+
+async def test_agent():
+    response = await wr_runner.run_debug("What wide receivers should I start this week?")
+
+asyncio.run(test_agent())          

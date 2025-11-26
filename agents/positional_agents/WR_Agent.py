@@ -6,7 +6,7 @@ import base64
 import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
-from utils.shared_tools import get_current_week, get_player_weekly_stats, search_web, get_player_list_info
+from utils.shared_tools import get_current_week, get_player_weekly_stats, search_web, get_player_list_info, post_week_stats
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from supabase_client import supabase
 
@@ -89,55 +89,9 @@ def get_WR_average_stats(player_id: int) -> dict:
         "Season Average Receiving First Downs": round(stats['breakdown'].get('213', 0)/weeksPlayed, 2),
         "Season Average 100-199 Receiving Yard Games": round(stats['breakdown'].get('receiving100To199YardGame',0)/weeksPlayed, 2),
     }
-
-def post_WR_week_stats(player):
-    p = league.player_info(playerId=player["player_id"])
-    if league.current_week<5:
-        week_range = range(1, league.current_week)
-    else:
-        week_range = range(league.current_week-4, league.current_week)
-    for week in week_range:
-        response = (
-            supabase.table("player_weekly_stats")
-            .select("*")  # Just select one column (faster)
-            .eq("player_id", player["player_id"])
-            .eq("week", week)
-            .execute()
-        )
-        if response.data:
-            pass
-        else:
-            stats = p.stats.get(week, "Not available")
-            if (stats == "Not available"): 
-                data = {f"Week {week} Stats": "Didn't play because they were benched or on BYE week."}
-            else:
-                data = {
-                    f"Week {week} Receptions": stats['breakdown'].get('receivingReceptions',0),
-                    f"Week {week} Targets": stats['breakdown'].get('receivingTargets', 0),
-                    f"Week {week} Receiving Yards": stats['breakdown'].get('receivingYards', 0),
-                    f"Week {week} Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
-                    f"Week {week} Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
-                    f"Week {week} First Downs": stats['breakdown'].get('213', 0),
-                    f"Week {week} Touchdowns with 0-9 Yard Reception": stats['breakdown'].get('183',0),
-                    f"Week {week} Touchdowns with 10-19 Yard Reception": stats['breakdown'].get('184',0),
-                    f"Week {week} Touchdowns with 20-29 Yard Reception": stats['breakdown'].get('185',0),
-                    f"Week {week} Touchdowns with 30-39 Yard Reception": stats['breakdown'].get('186',0),
-                    f"Week {week} Touchdowns with 40-49 Yard Reception": (stats['breakdown'].get('receiving40PlusYardTD',0)-stats['breakdown'].get('receiving50PlusYardTD', 0)),
-                    f"Week {week} Touchdowns with 50+ Yard Reception": stats['breakdown'].get('receiving50PlusYardTD', 0),
-                    f"Week {week} Every 5 Receptions": stats['breakdown'].get('54',0),
-                    f"Week {week} Every 10 Receptions": stats['breakdown'].get('55',0),
-                    f"Week {week} Catch Rate Percentage": round((stats['breakdown'].get('receivingReceptions' ,0)/stats['breakdown'].get('receivingTargets' ,0) if stats['breakdown'].get('receivingTargets' ,0) != 0 else 0),2),
-                    f"Week {week} Fantasy Points Per Target": round((stats.get('points' ,0)/stats['breakdown'].get('receivingTargets' ,0) if stats['breakdown'].get('receivingTargets' ,0) != 0 else 0),2)   
-                }
-            response = (
-                supabase.table("player_weekly_stats")
-                .insert({"player_id": player["player_id"], "week": week, "player_name": player["player_name"], "stats_breakdown": data, "points": stats.get('points', 0) if stats != 'Not available' else 0})
-                .execute()
-            )
-            print(f"{player['player_name']} for week {week} added")
         
 for player in wr_list:
-    post_WR_week_stats(player)
+    post_week_stats(player, 'WR')
 
 
 wr_agent = LlmAgent(
@@ -165,12 +119,18 @@ wr_agent = LlmAgent(
     - Include key stats supporting each decision
     - Note any concerns (e.g. TD-dependent, low floor, wide receiver room, o-line health, vegas odds, etc.)
     """,
-    tools=[get_player_list_info, get_current_week, get_WR_aggregate_stats, get_WR_average_stats, get_player_weekly_stats, search_web]
+    tools=[
+        FunctionTool(get_current_week),
+        FunctionTool(get_WR_aggregate_stats),
+        FunctionTool(get_WR_average_stats),
+        FunctionTool(get_player_weekly_stats),
+        FunctionTool(search_web)
+    ]
 )
 
-# wr_runner = InMemoryRunner(agent=wr_agent)
+wr_runner = InMemoryRunner(agent=wr_agent)
 
-# async def test_agent():
-#     response = await wr_runner.run_debug("What wide receivers should I start this week?")
+async def test_agent():
+    response = await wr_runner.run_debug("What wide receivers should I start this week?")
 
-# asyncio.run(test_agent())    
+asyncio.run(test_agent())    
