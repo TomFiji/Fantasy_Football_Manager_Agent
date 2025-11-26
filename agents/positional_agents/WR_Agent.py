@@ -7,7 +7,7 @@ import base64
 import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
-from utils.shared_tools import get_current_week, get_player_recent_performance, search_web, get_player_list_info, post_week_stats, get_external_analysis
+from utils.shared_tools import get_current_week, get_player_recent_performance, get_player_list_info, post_week_stats, get_external_analysis, search_agent
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from supabase_client import supabase
 
@@ -23,7 +23,6 @@ from google.adk.agents import LlmAgent
 from google.adk.models.google_llm import Gemini
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
-from google.adk.tools import google_search
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.runners import InMemoryRunner
 
@@ -43,8 +42,8 @@ retry_config = types.HttpRetryOptions(
     http_status_codes=[429, 500, 503, 504],  # Retry on these HTTP errors
 )
 
-# logging.basicConfig(level=logging.DEBUG, stream=sys.stdout,
-#                     format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, stream=sys.stdout,
+                    format='%(levelname)s: %(message)s')
 
 
 wr_list = get_player_list_info('WR')
@@ -94,7 +93,8 @@ def get_WR_average_stats(player_id: int) -> dict:
         
 for player in wr_list:
     post_week_stats(player, 'WR')
-    print(get_external_analysis(player["player_name"], player["team"]))
+
+search_tool = AgentTool(agent=search_agent)
 
 
 wr_agent = LlmAgent(
@@ -106,7 +106,7 @@ wr_agent = LlmAgent(
     1. Retrieve the player's core season metrics: Call 'get_WR_aggregate_stats' and 'get_WR_average_stats' using the value found in player_id as the parameter to access the data
     2. Retrieve the player's recent performance: Call 'get_player_recent_performance' using their player_id.
         a. Do not analyze the week a player was on the bench or BYE
-    3. Retrieve External Context: Call 'search_web' to research the player's injury status, team offensive line strength, and teammate wide receiver health. Use this information to determine if the player's usage will increase or decrease this week.
+    3. Retrieve External Context: Call 'search_tool' to research the player's injury status, team offensive line strength, and critical teammate's health. This information has to be relevant the current week of the current 2025/2026 season, ignore all information from other seasons as the rosters have changed. Use this information to determine if the player's usage will increase or decrease this week.
     4. The opponent's defensive rank and the player's injury status (from the input list) are critical factors.
     5. Analyze ALL retrieved data (stats, opponents' rank, and web search results) and assign a grade from 0-100.
 
@@ -122,13 +122,13 @@ wr_agent = LlmAgent(
         FunctionTool(get_WR_aggregate_stats),
         FunctionTool(get_WR_average_stats),
         FunctionTool(get_player_recent_performance),
-        FunctionTool(search_web)
+        search_tool
     ]
 )
 
-# wr_runner = InMemoryRunner(agent=wr_agent)
+wr_runner = InMemoryRunner(agent=wr_agent)
 
-# async def test_agent():
-#     response = await wr_runner.run_debug("What wide receivers should I start this week?")
+async def test_agent():
+    response = await wr_runner.run_debug("What wide receivers should I start this week?")
 
-# asyncio.run(test_agent())    
+asyncio.run(test_agent())    

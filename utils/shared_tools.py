@@ -4,6 +4,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from supabase_client import supabase
 from googlesearch import search
 from utils.espn_client import my_team, league
+from google.adk.agents import LlmAgent
+from google.adk.tools import AgentTool
+from google.adk.tools.google_search_tool import GoogleSearchTool
 
 def get_current_week() -> int:
     return league.current_week
@@ -21,6 +24,15 @@ def get_player_list_info(position) -> list[dict]:
         if (player.position == position and player.on_bye_week==False):
             my_players.append({"player_name": player.name, "player_id": player.playerId, "team": player.proTeam, "opponent": player.pro_opponent, f"opponent_rank_against_{position}s": player.pro_pos_rank, "injury_status": player.injuryStatus})
     return my_players
+
+search_agent = LlmAgent(
+    model='gemini-2.5-flash',
+    name='SearchAgent',
+    instruction='You are a specialist in Google Search grounding. Use web search to find current, factual information and provide structured, well organized findings.',
+    tools=[GoogleSearchTool()]
+)
+
+
 
 
 def search_web(query: str) -> str:
