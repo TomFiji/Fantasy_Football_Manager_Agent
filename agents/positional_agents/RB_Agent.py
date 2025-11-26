@@ -44,8 +44,8 @@ retry_config = types.HttpRetryOptions(
 
 rb_list = get_player_list_info('RB')
 
-def get_RB_aggregate_stats(player: str):
-    p = league.player_info(name=player)
+def get_RB_aggregate_stats(player_id: int) -> dict:
+    p = league.player_info(playerId=player_id)
     stats = p.stats.get(0, "Not available")
     return{
         "Season Total Rushing Attempts": stats['breakdown'].get('rushingAttempts',0),
@@ -67,8 +67,8 @@ def get_RB_aggregate_stats(player: str):
         "Every 10 Receptions": stats['breakdown'].get('55',0),
     }
     
-def get_RB_average_stats(player: str):
-    p = league.player_info(name=player)
+def get_RB_average_stats(player_id: int) -> dict:
+    p = league.player_info(playerId=player_id)
     stats = p.stats.get(0, "Not available")
     weeksPlayed = stats['breakdown'].get('210', 0)
     if (weeksPlayed == 0):
@@ -93,27 +93,27 @@ for player in rb_list:
 rb_agent = LlmAgent(
     name="wr_agent",
     model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
-    instruction=f"""You are the wide receiver coordinator of my fantasy football team.
+    instruction=f"""You are the running back coordinator of my fantasy football team.
     
-    Your job is to choose to pick the 2 best options from a list of wide receivers I give you. For each player in {rb_list} you will:
+    Your job is to choose to pick the 2 best options from a list of running back I give you. For each player in {rb_list} you will:
     1. Call 'get_RB_aggregate_stats' using the value found in player_id as the parameter to access the data
     2. Call 'get_RB_average_stats' using the value found in player_id as the parameter to access the data
     2. Call 'get_player_weekly_stats' 4 times for each player's PREVIOUS 4 weeks to 'get_current_week'. DO NOT call get_current_week's stats, it will result in an error.
         a. For example, 'get_current_week' returns 11, pull up weeks 7-10
         b. If 'get_current_week' is less than 5, only pull up the weeks previous to that. DO NOT pass through 0 or any negative numbers through the function
-        a. Do not analyze the week a player was on the bench or BYE
+        c. Do not analyze the week a player was on the bench or BYE
     3. Analyze each player's stats from the multiple dictionaries you just pulled and grade them on a scale of 0-100 based on the stats given to you of that player
     4. For each player, also take into consideration their injury status and use 'search_web' to do more analysis if injury status isn't 'ACTIVE' and change their grade accordingly
     5. For each player, also take into consideration their 'Opposing team' and 'Opposing team's defensive rank against WRs' from {rb_list} and change their grade accordingly
     6. For each player, use 'search_web' to look up the strength of their team's offensive line and put emphasis on this for their grade since a good offensive line is a must for a good running performance
-    7. For each player, grab their 'Team' from {rb_list} and use 'search_web' to see if there are any other injured wide receivers on the team that are out or wide receivers coming back. Use this information to update that player's grade.
+    7. For each player, grab their 'Team' from {rb_list} and use 'search_web' to see if there are any other injured running backs on the team that are out or running backs coming back. Use this information to update that player's grade.
     
     **Output Format**
-    - Rank players from 1 to however many wide receivers are on the roster and the grade you gave them
+    - Rank players from 1 to however many running backs are on the roster and the grade you gave them
     - For top 2: "START" with reason
     - For others: "SIT" with brief explanation
     - Include key stats supporting each decision
-    - Note any concerns (e.g. TD-dependent, low floor, wide receiver room, o-line health, vegas odds, etc.)
+    - Note any concerns (e.g. TD-dependent, low floor, running back room, o-line health, vegas odds, etc.)
     """,
     tools=[
         FunctionTool(get_current_week),
@@ -127,6 +127,6 @@ rb_agent = LlmAgent(
 rb_runner = InMemoryRunner(agent=rb_agent)
 
 async def test_agent():
-    response = await wr_runner.run_debug("What wide receivers should I start this week?")
+    response = await rb_runner.run_debug("What running backs should I start this week?")
 
 asyncio.run(test_agent())          

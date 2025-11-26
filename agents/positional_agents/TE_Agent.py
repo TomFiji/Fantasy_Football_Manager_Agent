@@ -44,8 +44,8 @@ retry_config = types.HttpRetryOptions(
 te_list = get_player_list_info('TE')
 
 
-def get_TE_aggregate_stats(player: str):
-    p = league.player_info(name=player)
+def get_TE_aggregate_stats(player_id: int) -> dict:
+    p = league.player_info(playerId=player_id)
     stats = p.stats.get(0, "Not available")
     return{
         "Season Total Receptions": stats['breakdown'].get('receivingReceptions',0),
@@ -82,8 +82,8 @@ def get_TE_aggregate_stats(player: str):
         "Total Games Played": stats['breakdown'].get('210', 0)
     }
     
-def get_TE_average_stats(player: str):
-    p = league.player_info(name=player)
+def get_TE_average_stats(player_id: int) -> dict:
+    p = league.player_info(playerId=player_id)
     stats = p.stats.get(0, "Not available")
     weeksPlayed = stats['breakdown']['210']
     if (weeksPlayed == 0):

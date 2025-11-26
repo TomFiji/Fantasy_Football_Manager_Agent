@@ -19,13 +19,13 @@ def get_player_list_info(position) -> list[dict]:
     my_players = []
     for player in my_lineup:
         if (player.position == position and player.on_bye_week==False):
-            my_players.append({"player_name": player.name, "player_id": player.playerId, "Team": player.proTeam, "Opposing team": player.pro_opponent, f"Opposing team's defensive rank against {position}s": player.pro_pos_rank, "Injury Status": player.injuryStatus})
+            my_players.append({"player_name": player.name, "player_id": player.playerId, "team": player.proTeam, "opponent": player.pro_opponent, f"opponent_rank_against_{position}s": player.pro_pos_rank, "injury_status": player.injuryStatus})
     return my_players
 
 
 def search_web(query: str) -> str:
     try:
-        results = search(query, num_results=3, advanced=True)
+        results = search(query, num_results=3)
         formatted_results = []
         for r in results:
             formatted_results.append(
@@ -44,6 +44,27 @@ def search_web(query: str) -> str:
         )
     except Exception as e:
         return f"Error performing search: {e}"
+
+def get_external_analysis(player_name: str, team_name: str) -> dict:
+    """
+    Performs specific web searches for injury, o-line, and teammate room health 
+    and returns a compiled report.
+    """
+    
+    # 1. Query the search tool for injury only
+    injury_query = f"{player_name} week {get_current_week()} injury status fantasy"
+    injury_result = search_web(query=injury_query) 
+    
+    # 2. Query the search tool for O-Line
+    oline_query = f"{team_name} offensive line health report"
+    oline_result = search_web(query=oline_query)
+    
+    #3. Query the search tool for teammate health
+    teammate_query = f"{player_name} teammate health week {get_current_week()} injury status fantasy"
+    teammate_result = search_web(query=teammate_query)
+    
+    return {"injury_report": injury_result, "oline_report": oline_result, "teammate_report": teammate_result}
+
     
    
 def post_week_stats(player, position: str):
@@ -108,17 +129,28 @@ def post_week_stats(player, position: str):
                 .execute()
             )
             print(f"{player['player_name']} for week {week} added")   
-  
-            
-def get_player_weekly_stats(player_id: int, week: int) -> dict:
-    response = (
+
+def get_player_recent_performance(player_id: int)-> dict:
+    recent_stats = {}
+    if get_current_week()<5:
+        weeks = range(1, get_current_week())
+    else:
+        weeks = range(get_current_week()-4, get_current_week())
+    for week in weeks:
+        response = (
         supabase.table("player_weekly_stats")
         .select("*")
         .eq("player_id", player_id)
         .eq("week", week)
         .execute()
-    )
-    return response.data[0]['stats_breakdown']
+        )
+        recent_stats.update(response.data[0]['stats_breakdown'])
+    return recent_stats    
+            
+        
+        
+                
+        
   
 POSITION_STATS = {
     'WR': [

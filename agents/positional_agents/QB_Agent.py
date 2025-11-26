@@ -43,8 +43,8 @@ retry_config = types.HttpRetryOptions(
 
 qb_list = get_player_list_info('QB')
 
-def get_QB_aggregate_stats(player: str):
-    p = league.player_info(name=player)
+def get_QB_aggregate_stats(player_id: int) -> dict:
+    p = league.player_info(playerId=player_id)
     stats = p.stats.get(0, "Not available")
     return{
         "Season Total Passing Attempts": stats['breakdown'].get('passingAttempts',0),
@@ -82,8 +82,8 @@ def get_QB_aggregate_stats(player: str):
         "Rushing Yards Per Attempt": stats['breakdown'].get('rushingYardsPerAttempt' ,0),
     }
     
-def get_QB_average_stats(player: str):
-    p = league.player_info(name=player)
+def get_QB_average_stats(player_id: int) -> dict:
+    p = league.player_info(playerId=player_id)
     stats = p.stats.get(0, "Not available")
     weeksPlayed = stats['breakdown']['210']
     if (weeksPlayed == 0):
