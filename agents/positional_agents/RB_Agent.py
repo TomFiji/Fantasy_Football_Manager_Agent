@@ -6,6 +6,10 @@ import base64
 import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
+from utils.shared_tools import get_current_week, get_player_weekly_stats, search_web
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from supabase_client import supabase
+
 
 load_dotenv()
 

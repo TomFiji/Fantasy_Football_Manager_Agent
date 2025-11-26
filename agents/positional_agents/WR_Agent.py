@@ -6,6 +6,7 @@ import base64
 import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
+from utils.shared_tools import get_current_week, get_player_weekly_stats, search_web, get_player_list_info
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from supabase_client import supabase
 
@@ -43,21 +44,8 @@ retry_config = types.HttpRetryOptions(
     http_status_codes=[429, 500, 503, 504],  # Retry on these HTTP errors
 )
 
-box_scores = league.box_scores(int(league.current_week))
-for matchup in box_scores:
-    if matchup.home_team == my_team or matchup.away_team == my_team:
-        my_lineup = matchup.home_lineup if matchup.home_team == my_team else matchup.away_lineup
 
-my_wr_players = []
-for player in my_lineup:
-    if (player.position == 'WR' and player.on_bye_week==False):
-        my_wr_players.append({"player_name": player.name, "player_id": player.playerId, "Team": player.proTeam, "Opposing team": player.pro_opponent, "Opposing team's defensive rank against WRs": player.pro_pos_rank, "Injury Status": player.injuryStatus})
-
-def get_player_list_info() -> list[dict]:
-    return my_wr_players
-
-def get_current_week() -> int:
-    return league.current_week
+wr_list = get_player_list_info('WR')
 
 def get_WR_aggregate_stats(player_id: int) -> dict:
     p = league.player_info(playerId=player_id)
@@ -101,37 +89,6 @@ def get_WR_average_stats(player_id: int) -> dict:
         "Season Average Receiving First Downs": round(stats['breakdown'].get('213', 0)/weeksPlayed, 2),
         "Season Average 100-199 Receiving Yard Games": round(stats['breakdown'].get('receiving100To199YardGame',0)/weeksPlayed, 2),
     }
-    
-def get_WR_week_stats(player_id: int, player_name: str, week: int)-> dict:
-    p = league.player_info(playerId=player_id)
-    stats = p.stats.get(week, "Not available")
-    if (stats == "Not available"): 
-        data = {f"Week {week} Stats": "Didn't play because they were benched or on BYE week."}
-    else:
-        data = {
-            f"Week {week} Receptions": stats['breakdown'].get('receivingReceptions',0),
-            f"Week {week} Targets": stats['breakdown'].get('receivingTargets', 0),
-            f"Week {week} Receiving Yards": stats['breakdown'].get('receivingYards', 0),
-            f"Week {week} Touchdowns": stats['breakdown'].get('receivingTouchdowns', 0),
-            f"Week {week} Yards After Catch": stats['breakdown'].get('receivingYardsAfterCatch', 0),
-            f"Week {week} First Downs": stats['breakdown'].get('213', 0),
-            f"Week {week} Touchdowns with 0-9 Yard Reception": stats['breakdown'].get('183',0),
-            f"Week {week} Touchdowns with 10-19 Yard Reception": stats['breakdown'].get('184',0),
-            f"Week {week} Touchdowns with 20-29 Yard Reception": stats['breakdown'].get('185',0),
-            f"Week {week} Touchdowns with 30-39 Yard Reception": stats['breakdown'].get('186',0),
-            f"Week {week} Touchdowns with 40-49 Yard Reception": (stats['breakdown'].get('receiving40PlusYardTD',0)-stats['breakdown'].get('receiving50PlusYardTD', 0)),
-            f"Week {week} Touchdowns with 50+ Yard Reception": stats['breakdown'].get('receiving50PlusYardTD', 0),
-            f"Week {week} Every 5 Receptions": stats['breakdown'].get('54',0),
-            f"Week {week} Every 10 Receptions": stats['breakdown'].get('55',0),
-            f"Week {week} Catch Rate Percentage": round((stats['breakdown'].get('receivingReceptions' ,0)/stats['breakdown'].get('receivingTargets' ,0) if stats['breakdown'].get('receivingTargets' ,0) != 0 else 0),2),
-            f"Week {week} Fantasy Points Per Target": round((stats.get('points' ,0)/stats['breakdown'].get('receivingTargets' ,0) if stats['breakdown'].get('receivingTargets' ,0) != 0 else 0),2)   
-        }
-    response = (
-        supabase.table("player_weekly_stats")
-        .insert({"player_id": player_id, "week": week, "player_name": player_name, "stats_breakdown": data, "points": stats.get('points', 0) if stats != 'Not available' else 0})
-        .execute()
-    )
-    return data
 
 def post_WR_week_stats(player):
     p = league.player_info(playerId=player["player_id"])
@@ -179,49 +136,16 @@ def post_WR_week_stats(player):
             )
             print(f"{player['player_name']} for week {week} added")
         
-for player in my_wr_players:
+for player in wr_list:
     post_WR_week_stats(player)
-
-
-def get_player_weekly_stats(player_id: int, player_name: str, week: int) -> dict:
-    response = (
-        supabase.table("player_weekly_stats")
-        .select("*")
-        .eq("player_id", player_id)
-        .eq("week", week)
-        .execute()
-    )
-    return response.data[0]['stats_breakdown']
-  
-def search_web(query: str) -> str:
-    try:
-        results = search(query, num_results=3, advanced=True)
-        formatted_results = []
-        for r in results:
-            formatted_results.append(
-                f"Title: {r.title}\nSnippet: {r.description}\nSource: {r.url}"
-            )
-        
-        if not formatted_results:
-            return "No search results found."
-        
-        return "\n\n".join(formatted_results)
-    
-    except TypeError:
-        return(
-            "Error: 'advanced=True' is not supported. Please ensure you installed "
-            "'googlesearch-python' and not just 'googlesearch'."
-        )
-    except Exception as e:
-        return f"Error performing search: {e}"
 
 
 wr_agent = LlmAgent(
     name="wr_agent",
     model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
-    instruction="""You are the wide receiver coordinator of my fantasy football team.
+    instruction=f"""You are the wide receiver coordinator of my fantasy football team.
     
-    Your job is to choose to pick the 2 best options from a list of wide receivers I give you. For each player in the 'get_player_list_info' list you will:
+    Your job is to choose to pick the 2 best options from a list of wide receivers I give you. For each player in {wr_list} you will:
     1. Call 'get_WR_aggregate_stats' using the value found in player_id as the parameter to access the data
     2. Call 'get_WR_average_stats' using the value found in player_id as the parameter to access the data
     2. Call 'get_player_weekly_stats' 4 times for each player's PREVIOUS 4 weeks to 'get_current_week'. DO NOT call get_current_week's stats, it will result in an error.
@@ -229,10 +153,10 @@ wr_agent = LlmAgent(
         b. If 'get_current_week' is less than 5, only pull up the weeks previous to that. DO NOT pass through 0 or any negative numbers through the function
         a. Do not analyze the week a player was on the bench or BYE
     3. Analyze each player's stats from the multiple dictionaries you just pulled and grade them on a scale of 0-100 based on the stats given to you of that player
-    4. For each player, also take into consideration their injury status and use the google_search tool to do more analysis and change their grade accordingly
-    5. For each player, also take into consideration their 'Opposing team' and 'Opposing team's defensive rank against WRs' from 'get_player_list_info' and change their grade accordingly
-    6. For each player, use the 'search_tool' to look up the strength of their team's offensive line
-    7. For each player, grab their 'Team' from 'get_player_list_info' and use the 'search_tool' to see if there are any other injured wide receivers that are out or wide receivers coming back. Use this information to update that player's grade.
+    4. For each player, also take into consideration their injury status and use 'search_web' to do more analysis if injury status isn't 'ACTIVE' and change their grade accordingly
+    5. For each player, also take into consideration their 'Opposing team' and 'Opposing team's defensive rank against WRs' from {wr_list} and change their grade accordingly
+    6. For each player, use 'search_web' to look up the strength of their team's offensive line
+    7. For each player, grab their 'Team' from {wr_list} and use 'search_web' to see if there are any other injured wide receivers on the team that are out or wide receivers coming back. Use this information to update that player's grade.
     
     **Output Format**
     - Rank players from 1 to however many wide receivers are on the roster and the grade you gave them
@@ -244,9 +168,9 @@ wr_agent = LlmAgent(
     tools=[get_player_list_info, get_current_week, get_WR_aggregate_stats, get_WR_average_stats, get_player_weekly_stats, search_web]
 )
 
-wr_runner = InMemoryRunner(agent=wr_agent)
+# wr_runner = InMemoryRunner(agent=wr_agent)
 
-async def test_agent():
-    response = await wr_runner.run_debug("What wide receivers should I start this week?")
+# async def test_agent():
+#     response = await wr_runner.run_debug("What wide receivers should I start this week?")
 
-asyncio.run(test_agent())    
+# asyncio.run(test_agent())    
