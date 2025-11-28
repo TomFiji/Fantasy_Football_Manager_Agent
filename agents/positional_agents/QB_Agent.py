@@ -6,7 +6,7 @@ import base64
 import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
-from utils.shared_tools import get_current_week, get_player_weekly_stats, search_web, get_player_list_info, post_week_stats
+from utils.shared_tools import get_current_week, get_player_recent_performance, get_player_list_info, post_week_stats, get_external_analysis, search_agent
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from supabase_client import supabase
 
@@ -22,6 +22,7 @@ from google.adk.agents import LlmAgent
 from google.adk.models.google_llm import Gemini
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.adk.tools.agent_tool import AgentTool
 
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.tool_context import ToolContext
@@ -111,47 +112,45 @@ def get_QB_average_stats(player_id: int) -> dict:
             "Season Average Rushing Touchdowns": round(stats['breakdown'].get('rushingTouchdowns' ,0)/weeksPlayed, 2),
         }
 
-for player in wr_list:
-    post_week_stats(player, 'WR')
+for player in qb_list:
+    post_week_stats(player, 'QB')
 
 
-wr_agent = LlmAgent(
-    name="wr_agent",
+search_tool = AgentTool(agent=search_agent)
+
+
+qb_agent = LlmAgent(
+    name="qb_agent",
     model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
-    instruction=f"""You are the wide receiver coordinator of my fantasy football team.
+    instruction=f"""You are the quarterback coordinator of my fantasy football team. Your goal is to choose the best option.
     
-    Your job is to choose to pick the 2 best options from a list of wide receivers I give you. For each player in {wr_list} you will:
-    1. Call 'get_WR_aggregate_stats' using the value found in player_id as the parameter to access the data
-    2. Call 'get_WR_average_stats' using the value found in player_id as the parameter to access the data
-    2. Call 'get_player_weekly_stats' 4 times for each player's PREVIOUS 4 weeks to 'get_current_week'. DO NOT call get_current_week's stats, it will result in an error.
-        a. For example, 'get_current_week' returns 11, pull up weeks 7-10
-        b. If 'get_current_week' is less than 5, only pull up the weeks previous to that. DO NOT pass through 0 or any negative numbers through the function
+    For **EACH** player in {qb_list}:
+    1. Retrieve the player's core season metrics: Call 'get_QB_aggregate_stats' and 'get_QB_average_stats' using the value found in player_id as the parameter to access the data
+    2. Retrieve the player's recent performance: Call 'get_player_recent_performance' using their player_id.
         a. Do not analyze the week a player was on the bench or BYE
-    3. Analyze each player's stats from the multiple dictionaries you just pulled and grade them on a scale of 0-100 based on the stats given to you of that player
-    4. For each player, also take into consideration their injury status and use 'search_web' to do more analysis if injury status isn't 'ACTIVE' and change their grade accordingly
-    5. For each player, also take into consideration their 'Opposing team' and 'Opposing team's defensive rank against WRs' from {wr_list} and change their grade accordingly
-    6. For each player, use 'search_web' to look up the strength of their team's offensive line
-    7. For each player, grab their 'Team' from {wr_list} and use 'search_web' to see if there are any other injured wide receivers on the team that are out or wide receivers coming back. Use this information to update that player's grade.
+    3. Retrieve External Context: Call 'search_tool' to research the player's injury status, team offensive line strength, and critical teammate's health. This information has to be relevant the current week of the current 2025/2026 season, ignore all information from other seasons as the rosters have changed.
+    4. The opponent's defensive rank and the player's injury status (from the input list) are critical factors.
+    5. Analyze ALL retrieved data (stats, opponents' rank, and web search results) and assign a grade from 0-100.
+
     
     **Output Format**
-    - Rank players from 1 to however many wide receivers are on the roster and the grade you gave them
-    - For top 2: "START" with reason
-    - For others: "SIT" with brief explanation
-    - Include key stats supporting each decision
-    - Note any concerns (e.g. TD-dependent, low floor, wide receiver room, o-line health, vegas odds, etc.)
+    - Rank players 1 to N, including the final 0-100 grade.
+    - For top 1: "START" with the detailed reason, citing external factors and key stats.
+    - For others: "SIT" with a brief explanation.
+    - Note any specific concerns (e.g., o-line health, wide receiver room, TD-dependency).
     """,
     tools=[
         FunctionTool(get_current_week),
-        FunctionTool(get_WR_aggregate_stats),
-        FunctionTool(get_WR_average_stats),
-        FunctionTool(get_player_weekly_stats),
-        FunctionTool(search_web)
+        FunctionTool(get_QB_aggregate_stats),
+        FunctionTool(get_QB_average_stats),
+        FunctionTool(get_player_recent_performance),
+        search_tool
     ]
 )
 
-wr_runner = InMemoryRunner(agent=wr_agent)
+qb_runner = InMemoryRunner(agent=qb_agent)
 
 async def test_agent():
-    response = await wr_runner.run_debug("What wide receivers should I start this week?")
+    response = await qb_runner.run_debug("What quarterbacks should I start this week?")
 
 asyncio.run(test_agent())     

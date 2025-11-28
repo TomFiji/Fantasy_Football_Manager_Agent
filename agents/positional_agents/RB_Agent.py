@@ -127,4 +127,4 @@ rb_runner = InMemoryRunner(agent=rb_agent)
 async def test_agent():
     response = await rb_runner.run_debug("What running backs should I start this week?")
 
-asyncio.run(test_agent())          
+asyncio.run(test_agent())
