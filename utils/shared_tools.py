@@ -32,31 +32,6 @@ search_agent = LlmAgent(
     tools=[GoogleSearchTool()]
 )
 
-
-
-
-def search_web(query: str) -> str:
-    try:
-        results = search(query, num_results=3)
-        formatted_results = []
-        for r in results:
-            formatted_results.append(
-                f"Title: {r.title}\nSnippet: {r.description}\nSource: {r.url}"
-            )
-        
-        if not formatted_results:
-            return "No search results found."
-        
-        return "\n\n".join(formatted_results)
-    
-    except TypeError:
-        return(
-            "Error: 'advanced=True' is not supported. Please ensure you installed "
-            "'googlesearch-python' and not just 'googlesearch'."
-        )
-    except Exception as e:
-        return f"Error performing search: {e}"
-
 def get_external_analysis(player_name: str, team_name: str) -> dict:
     """
     Performs specific web searches for injury, o-line, and teammate room health 
@@ -65,15 +40,15 @@ def get_external_analysis(player_name: str, team_name: str) -> dict:
     
     # 1. Query the search tool for injury only
     injury_query = f"{player_name} week {get_current_week()} injury status fantasy"
-    injury_result = search_web(query=injury_query) 
+
     
     # 2. Query the search tool for O-Line
     oline_query = f"{team_name} offensive line health report"
-    oline_result = search_web(query=oline_query)
+    
     
     #3. Query the search tool for teammate health
     teammate_query = f"{player_name} teammate health week {get_current_week()} injury status fantasy"
-    teammate_result = search_web(query=teammate_query)
+    
     
     return {"injury_report": injury_result, "oline_report": oline_result, "teammate_report": teammate_result}
 

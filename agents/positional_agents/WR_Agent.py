@@ -42,8 +42,8 @@ retry_config = types.HttpRetryOptions(
     http_status_codes=[429, 500, 503, 504],  # Retry on these HTTP errors
 )
 
-logging.basicConfig(level=logging.DEBUG, stream=sys.stdout,
-                    format='%(levelname)s: %(message)s')
+# logging.basicConfig(level=logging.DEBUG, stream=sys.stdout,
+#                     format='%(levelname)s: %(message)s')
 
 
 wr_list = get_player_list_info('WR')
@@ -112,10 +112,21 @@ wr_agent = LlmAgent(
 
     
     **Output Format**
-    - Rank players 1 to N, including the final 0-100 grade.
-    - For top 2: "START" with the detailed reason, citing external factors and key stats.
-    - For others: "SIT" with a brief explanation.
-    - Note any specific concerns (e.g., o-line health, wide receiver room, TD-dependency).
+    **MUST BE IN VALID JSON FORMAT**
+    {{
+        'rankings':[
+            {{
+                'rank': 'rank out of all the players',
+                'player_name': 'player name',
+                'player_id': 'player id',
+                'player_grade': 'player grade',
+                'recommendation': 'START or SIT',
+                'opponent': 'opponent team name',
+                'opponent ranking against WR': 'opponent ranking'
+                'reasoning': 'reasoning'
+            }}
+        ]
+    }}
     """,
     tools=[
         FunctionTool(get_current_week),

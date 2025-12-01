@@ -133,11 +133,22 @@ qb_agent = LlmAgent(
     5. Analyze ALL retrieved data (stats, opponents' rank, and web search results) and assign a grade from 0-100.
 
     
-    **Output Format**
-    - Rank players 1 to N, including the final 0-100 grade.
-    - For top 1: "START" with the detailed reason, citing external factors and key stats.
-    - For others: "SIT" with a brief explanation.
-    - Note any specific concerns (e.g., o-line health, wide receiver room, TD-dependency).
+   **Output Format**
+    **MUST BE IN VALID JSON FORMAT**
+    {{
+        'rankings':[
+            {{
+                'rank': 'rank out of all the players',
+                'player_name': 'player name',
+                'player_id': 'player id',
+                'player_grade': 'player grade',
+                'recommendation': 'START or SIT',
+                'opponent': 'opponent team name',
+                'opponent ranking against QB': 'opponent ranking'
+                'reasoning': 'reasoning'
+            }}
+        ]
+    }}
     """,
     tools=[
         FunctionTool(get_current_week),
