@@ -7,7 +7,7 @@ import base64
 import math
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 from utils.espn_client import my_team, league
-from utils.shared_tools import get_current_week, get_player_recent_performance, get_player_list_info, post_week_stats, get_external_analysis, search_agent
+from utils.shared_tools import get_current_week, get_player_recent_performance, get_player_list_info, post_week_stats, get_aggregate_stats, search_agent
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from supabase_client import supabase
 
@@ -92,7 +92,8 @@ def get_WR_average_stats(player_id: int) -> dict:
     }
         
 for player in wr_list:
-    post_week_stats(player, 'WR')
+    post_week_stats(player, "WR")
+    print(f"Name: {player['player_name']}, Stats: {get_aggregate_stats(player, 'WR')}")
 
 search_tool = AgentTool(agent=search_agent)
 

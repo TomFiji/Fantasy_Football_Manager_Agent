@@ -1,5 +1,6 @@
 import sys
 import os
+import math
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from supabase_client import supabase
 from googlesearch import search
@@ -32,29 +33,89 @@ search_agent = LlmAgent(
     tools=[GoogleSearchTool()]
 )
 
-def get_external_analysis(player_name: str, team_name: str) -> dict:
-    """
-    Performs specific web searches for injury, o-line, and teammate room health 
-    and returns a compiled report.
-    """
-    
-    # 1. Query the search tool for injury only
-    injury_query = f"{player_name} week {get_current_week()} injury status fantasy"
+def get_aggregate_stats(player_id: int, position: str) -> dict:
+    p = league.player_info(playerId=player_id)
+    stats = p.stats.get(0, "Not available")
+    if (stats=="Not available"):
+        return "Player has not played yet"
+    else:
+        aggregate_data = {}
+        breakdown = stats['breakdown']
+        points = stats['points']
+        games_played = breakdown.get('210', 0)
+        STATS_NEEDING_GAME_MULTIPLIER = ['receivingYards', 'rushingYards', 'passingYards']
+        for display_name, stat_key in POSITION_STATS[position]:
+            if stat_key in STATS_NEEDING_GAME_MULTIPLIER:
+                aggregate_data[f"Season Total {display_name}"] = math.ceil(breakdown.get(stat_key, 0)*games_played)
+            else:    
+                aggregate_data[f"Season Total {display_name}"] = breakdown.get(stat_key, 0)
+            if position == 'WR':
+                aggregate_data[f"Season Total Touchdowns with 40-49 Yard Reception"] = (
+                    breakdown.get('receiving40PlusYardTD', 0) - breakdown.get('receiving50PlusYardTD', 0)
+                )
+                aggregate_data[f"Season Total 100-199 Receving Yard Games"] = breakdown.get('receiving100To199YardGame',0)
+                targets = breakdown.get('receivingTargets', 0)
+                receptions = breakdown.get('receivingReceptions', 0)
+                aggregate_data[f"Season Total Catch Rate Percentage"] = round(
+                    (receptions / targets) if targets != 0 else 0, 2
+                )
 
-    
-    # 2. Query the search tool for O-Line
-    oline_query = f"{team_name} offensive line health report"
-    
-    
-    #3. Query the search tool for teammate health
-    teammate_query = f"{player_name} teammate health week {get_current_week()} injury status fantasy"
-    
-    
-    return {"injury_report": injury_result, "oline_report": oline_result, "teammate_report": teammate_result}
+                aggregate_data[f"Season Total Fantasy Points Per Target"] = round(
+                    (points / targets) if targets != 0 else 0, 2
+                )
+        
+            elif position == 'RB':
+                aggregate_data[f"Season Total Touchdowns with 40-49 Yards Rushing"] = (
+                    breakdown.get('rushing40PlusYardTD', 0) - breakdown.get('rushing50PlusYardTD', 0)
+                )
+            
+            elif position == 'TE':
+                targets = breakdown.get('receivingTargets', 0)
+                receptions = breakdown.get('receivingReceptions', 0)
+                aggregate_data[f"Season Total Catch Rate Percentage"] = round(
+                    (receptions / targets) if targets != 0 else 0, 2
+                )
+                
+                aggregate_data[f"Season Total Fantasy Points Per Target"] = round(
+                    (points / targets) if targets != 0 else 0, 2
+                )
+        return aggregate_data          
 
+def get_average_stats(player_id: int, position: str) -> dict:
+    p = league.player_info(playerId=player_id)
+    stats = p.stats.get(0, "Not available")
+    if (stats=="Not available"):
+        return "Player has not played yet"
+    else:
+        average_data = {}
+        breakdown = stats['breakdown']
+        points = stats['points']
+        games_played = breakdown.get('210', 0)
+        STATS_ALREADY_AVERAGED = ['rushingYardsPerAttempt', 'rushingYards', 'receivingYards', 'receivingYardsPerReception', 'passingYards', 'passingCompletionPercentage']
+        for display_name, stat_key in AVERAGE_STATS[position]:
+            if stat_key in STATS_ALREADY_AVERAGED:
+                average_data[f"{display_name}"] = breakdown.get(stat_key, 0)
+            else:
+                average_data[f"{display_name}"] = round(breakdown.get(stat_key, 0)/games_played, 2)
+            if position == 'WR' or 'TE':
+                targets = breakdown.get('receivingTargets', 0)
+                receptions = breakdown.get('receivingReceptions', 0)
+                
+                average_data['Season Average Catch Rate Percentage'] = round(
+                    (receptions / targets) if targets != 0 else 0, 2
+                )
+            
+            elif position == 'QB':
+                tds = breakdown.get('passingTouchdowns', 0)
+                ints = breakdown.get('passingInterceptions', 0)
+                
+                average_data['Season Average TD:INT Ratio'] = round(
+                    (tds / ints) if ints != 0 else tds, 2
+                )
+        return average_data
     
    
-def post_week_stats(player, position: str):
+def post_week_stats(player, position: str)-> dict:
     p = league.player_info(playerId=player["player_id"])
     if league.current_week<5:
         week_range = range(1, league.current_week)
@@ -84,7 +145,6 @@ def post_week_stats(player, position: str):
                     data[f"Week {week} Touchdowns with 40-49 Yard Reception"] = (
                         breakdown.get('receiving40PlusYardTD', 0) - breakdown.get('receiving50PlusYardTD', 0)
                     )
-
                     targets = breakdown.get('receivingTargets', 0)
                     receptions = breakdown.get('receivingReceptions', 0)
                     data[f"Week {week} Catch Rate Percentage"] = round(
@@ -204,6 +264,69 @@ POSITION_STATS = {
         ('Rushing Attempts', 'rushingAttempts'),
         ('Rushing Yards', 'rushingYards'),
         ('Rushing Touchdowns', 'rushingTouchdowns'),
+    ]
+}
+
+AVERAGE_STATS = {
+    'WR': [
+        ('Season Average Receptions', 'receivingReceptions'),
+        ('Season Average Targets', 'receivingTargets'),
+        ('Season Average Receiving Yards', 'receivingYards'),  
+        ('Season Average Receiving Yards Per Reception', 'receivingYardsPerReception'), 
+        ('Season Average Touchdowns', 'receivingTouchdowns'),
+        ('Season Average Yards After Catch', 'receivingYardsAfterCatch'),
+        ('Season Average Receiving First Downs', '213'),
+        ('Season Average 100-199 Receiving Yard Games', 'receiving100To199YardGame'),
+    ],
+    'RB': [
+        ('Season Average Rushing Attempts', 'rushingAttempts'),
+        ('Season Average Rushing Yards Per Attempt', 'rushingYardsPerAttempt'),  
+        ('Season Average Receptions', 'receivingReceptions'),
+        ('Season Average Targets', 'receivingTargets'),
+        ('Season Average Rushing Yards', 'rushingYards'), 
+        ('Season Average Receiving Touchdowns', 'receivingTouchdowns'),
+        ('Season Average Rushing Touchdowns', 'rushingTouchdowns'),
+        ('Season Average Yards After Catch', 'receivingYardsAfterCatch'),
+        ('Season Average Fumbles', 'fumbles'),
+        ('Season Average First Downs', '213'),
+    ],
+    'QB': [
+        ('Season Average Passing Attempts', 'passingAttempts'),
+        ('Season Average Passing Completions', 'passingCompletions'),
+        ('Season Average Passing Completion Percentage', 'passingCompletionPercentage'),
+        ('Season Average Every 5 Pass Completions', '11'),
+        ('Season Average Every 10 Pass Completions', '12'),
+        ('Season Average Passing Yards', 'passingYards'),
+        ('Season Average Games with 300-399 Passing Yards', 'passing300To399YardGame'),
+        ('Season Average Games with 400+ Passing Yards', 'passing400PlusYardGame'),
+        ('Season Average Passing Touchdowns', 'passingTouchdowns'),
+        ('Season Average Passing 2 Point Conversions', 'passing2PtConversions'),
+        ('Season Average Rushing 2 Point Conversions', 'rushing2PtConversions'),
+        ('Season Average Passing Interceptions', 'passingInterceptions'),
+        ('Season Average Times Sacked Passing', 'passingTimesSacked'),
+        ('Season Average Passing Fumbles', '65'),
+        ('Season Average Turnovers', 'turnovers'),
+        ('Season Average Passing First Downs', '211'),
+        ('Season Average Rush Attempts', 'rushingAttempts'),
+        ('Season Average Rushing Yards', 'rushingYards'),
+        ('Season Average Rushing Touchdowns', 'rushingTouchdowns'),
+    ],
+    'TE': [
+        ('Season Average Receptions', 'receivingReceptions'),
+        ('Season Average Targets', 'receivingTargets'),
+        ('Season Average Receiving Yards', 'receivingYards'),
+        ('Season Average Touchdowns', 'receivingTouchdowns'),
+        ('Season Average Yards After Catch', 'receivingYardsAfterCatch'),
+        ('Receiving Yards Per Reception', 'receivingYardsPerReception'),
+        ('Season Average Receiving First Downs', '213'),
+        ('Season Average 100-199 Receiving Yard Games', 'receiving100To199YardGame'),
+        ('Season Average Receiving 2 Point Conversions', 'receiving2PtConversions'),
+        ('Season Average Fumbles', 'fumbles'),
+        ('Season Average Receiving Fumbles', '67'),
+        ('Season Average Receiving Fumbles Lost', '71'),
+        ('Season Average Rushing Attempts', 'rushingAttempts'),
+        ('Season Average Rushing Yards', 'rushingYards'),
+        ('Season Average Rushing Touchdowns', 'rushingTouchdowns'),
     ]
 }
               
