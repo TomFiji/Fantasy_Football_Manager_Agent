@@ -45,9 +45,6 @@ retry_config = types.HttpRetryOptions(
 te_list = get_player_list_info('TE')
 current_week = get_current_week()
 
-for player in te_list:
-    post_week_stats(player, 'TE')
-
 te_agent = LlmAgent(
     name="te_agent",
     model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
@@ -88,9 +85,11 @@ te_agent = LlmAgent(
     ]
 )
 
-te_runner = InMemoryRunner(agent=te_agent)
+te_runner = InMemoryRunner(agent=te_agent, app_name='agents')
 
-async def test_agent():
-    response = await te_runner.run_debug("What tight end should I start this week?")
 
-asyncio.run(test_agent())         
+if __name__ == "__main__":
+    async def test_agent():
+        response = await te_runner.run_debug("What tight end should I start this week?")
+
+    asyncio.run(test_agent())         

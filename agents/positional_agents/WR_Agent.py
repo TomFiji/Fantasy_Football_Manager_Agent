@@ -42,8 +42,8 @@ retry_config = types.HttpRetryOptions(
     http_status_codes=[429, 500, 503, 504],  # Retry on these HTTP errors
 )
 
-logging.basicConfig(level=logging.DEBUG, stream=sys.stdout,
-                    format='%(levelname)s: %(message)s')
+# logging.basicConfig(level=logging.DEBUG, stream=sys.stdout,
+#                     format='%(levelname)s: %(message)s')
 
 
 wr_list = get_player_list_info('WR')
@@ -97,9 +97,10 @@ wr_agent = LlmAgent(
     ]
 )
 
-wr_runner = InMemoryRunner(agent=wr_agent)
+wr_runner = InMemoryRunner(agent=wr_agent, app_name='agents')
 
-async def test_agent():
-    response = await wr_runner.run_debug("What wide receivers should I start this week?")
+if __name__ == "__main__":
+    async def test_agent():
+        response = await wr_runner.run_debug("What wide receivers should I start this week?")
 
-asyncio.run(test_agent())    
+    asyncio.run(test_agent())    

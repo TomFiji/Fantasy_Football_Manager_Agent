@@ -46,10 +46,6 @@ qb_list = get_player_list_info('QB')
 current_week = get_current_week()
 
 
-for player in qb_list:
-    post_week_stats(player, 'QB')
-
-
 qb_agent = LlmAgent(
     name="qb_agent",
     model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
@@ -90,9 +86,10 @@ qb_agent = LlmAgent(
     ]
 )
 
-qb_runner = InMemoryRunner(agent=qb_agent)
+qb_runner = InMemoryRunner(agent=qb_agent, app_name='agents')
 
-async def test_agent():
-    response = await qb_runner.run_debug("What quarterbacks should I start this week?")
+if __name__ == "__main__":
+    async def test_agent():
+        response = await qb_runner.run_debug("What quarterbacks should I start this week?")
 
-asyncio.run(test_agent())     
+    asyncio.run(test_agent())     

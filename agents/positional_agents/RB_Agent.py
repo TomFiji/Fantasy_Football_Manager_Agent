@@ -47,11 +47,6 @@ rb_list = get_player_list_info('RB')
 current_week = get_current_week()
 
 
-
-for player in rb_list:
-    post_week_stats(player, 'RB')     
-    print(f"Player: {player['player_name']} Average Stats: {get_average_stats(player['player_id'], player['position'])}") 
-
 rb_agent = LlmAgent(
     name="rb_agent",
     model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
@@ -92,9 +87,10 @@ rb_agent = LlmAgent(
     ]
 )
 
-rb_runner = InMemoryRunner(agent=rb_agent)
+rb_runner = InMemoryRunner(agent=rb_agent, app_name='agents')
 
-async def test_agent():
-    response = await rb_runner.run_debug("What running backs should I start this week?")
+if __name__ == "__main__":
+    async def test_agent():
+        response = await rb_runner.run_debug("What running backs should I start this week?")
 
-asyncio.run(test_agent())
+    asyncio.run(test_agent())
