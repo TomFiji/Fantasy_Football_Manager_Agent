@@ -9,6 +9,8 @@ from google.adk.agents import LlmAgent
 from google.adk.tools import AgentTool
 from google.adk.tools.google_search_tool import GoogleSearchTool
 
+
+
 def get_current_week() -> int:
     return league.current_week
 
@@ -23,7 +25,7 @@ def get_player_list_info(position) -> list[dict]:
     my_players = []
     for player in my_lineup:
         if (player.position == position and player.on_bye_week==False):
-            my_players.append({"player_name": player.name, "player_id": player.playerId, "team": player.proTeam, "opponent": player.pro_opponent, f"opponent_rank_against_{position}s": player.pro_pos_rank, "injury_status": player.injuryStatus})
+            my_players.append({"player_name": player.name, "player_id": player.playerId, "position": player.position, "team": player.proTeam, "opponent": player.pro_opponent, f"opponent_rank_against_{position}s": player.pro_pos_rank, "injury_status": player.injuryStatus})
     return my_players
 
 search_agent = LlmAgent(
@@ -32,6 +34,8 @@ search_agent = LlmAgent(
     instruction='You are a specialist in Google Search grounding. Use web search to find current, factual information and provide structured, well organized findings.',
     tools=[GoogleSearchTool()]
 )
+
+search_tool = AgentTool(agent=search_agent)
 
 def get_aggregate_stats(player_id: int, position: str) -> dict:
     p = league.player_info(playerId=player_id)
@@ -49,36 +53,36 @@ def get_aggregate_stats(player_id: int, position: str) -> dict:
                 aggregate_data[f"Season Total {display_name}"] = math.ceil(breakdown.get(stat_key, 0)*games_played)
             else:    
                 aggregate_data[f"Season Total {display_name}"] = breakdown.get(stat_key, 0)
-            if position == 'WR':
-                aggregate_data[f"Season Total Touchdowns with 40-49 Yard Reception"] = (
-                    breakdown.get('receiving40PlusYardTD', 0) - breakdown.get('receiving50PlusYardTD', 0)
-                )
-                aggregate_data[f"Season Total 100-199 Receving Yard Games"] = breakdown.get('receiving100To199YardGame',0)
-                targets = breakdown.get('receivingTargets', 0)
-                receptions = breakdown.get('receivingReceptions', 0)
-                aggregate_data[f"Season Total Catch Rate Percentage"] = round(
-                    (receptions / targets) if targets != 0 else 0, 2
-                )
+        if position == 'WR':
+            aggregate_data[f"Season Total Touchdowns with 40-49 Yard Reception"] = (
+                breakdown.get('receiving40PlusYardTD', 0) - breakdown.get('receiving50PlusYardTD', 0)
+            )
+            aggregate_data[f"Season Total 100-199 Receving Yard Games"] = breakdown.get('receiving100To199YardGame',0)
+            targets = breakdown.get('receivingTargets', 0)
+            receptions = breakdown.get('receivingReceptions', 0)
+            aggregate_data[f"Season Total Catch Rate Percentage"] = round(
+                (receptions / targets) if targets != 0 else 0, 2
+            )
 
-                aggregate_data[f"Season Total Fantasy Points Per Target"] = round(
-                    (points / targets) if targets != 0 else 0, 2
-                )
+            aggregate_data[f"Season Total Fantasy Points Per Target"] = round(
+                (points / targets) if targets != 0 else 0, 2
+            )
+    
+        elif position == 'RB':
+            aggregate_data[f"Season Total Touchdowns with 40-49 Yards Rushing"] = (
+                breakdown.get('rushing40PlusYardTD', 0) - breakdown.get('rushing50PlusYardTD', 0)
+            )
         
-            elif position == 'RB':
-                aggregate_data[f"Season Total Touchdowns with 40-49 Yards Rushing"] = (
-                    breakdown.get('rushing40PlusYardTD', 0) - breakdown.get('rushing50PlusYardTD', 0)
-                )
+        elif position == 'TE':
+            targets = breakdown.get('receivingTargets', 0)
+            receptions = breakdown.get('receivingReceptions', 0)
+            aggregate_data[f"Season Total Catch Rate Percentage"] = round(
+                (receptions / targets) if targets != 0 else 0, 2
+            )
             
-            elif position == 'TE':
-                targets = breakdown.get('receivingTargets', 0)
-                receptions = breakdown.get('receivingReceptions', 0)
-                aggregate_data[f"Season Total Catch Rate Percentage"] = round(
-                    (receptions / targets) if targets != 0 else 0, 2
-                )
-                
-                aggregate_data[f"Season Total Fantasy Points Per Target"] = round(
-                    (points / targets) if targets != 0 else 0, 2
-                )
+            aggregate_data[f"Season Total Fantasy Points Per Target"] = round(
+                (points / targets) if targets != 0 else 0, 2
+            )
         return aggregate_data          
 
 def get_average_stats(player_id: int, position: str) -> dict:
@@ -97,21 +101,21 @@ def get_average_stats(player_id: int, position: str) -> dict:
                 average_data[f"{display_name}"] = breakdown.get(stat_key, 0)
             else:
                 average_data[f"{display_name}"] = round(breakdown.get(stat_key, 0)/games_played, 2)
-            if position == 'WR' or 'TE':
-                targets = breakdown.get('receivingTargets', 0)
-                receptions = breakdown.get('receivingReceptions', 0)
-                
-                average_data['Season Average Catch Rate Percentage'] = round(
-                    (receptions / targets) if targets != 0 else 0, 2
-                )
+        if position == 'WR' or 'TE':
+            targets = breakdown.get('receivingTargets', 0)
+            receptions = breakdown.get('receivingReceptions', 0)
             
-            elif position == 'QB':
-                tds = breakdown.get('passingTouchdowns', 0)
-                ints = breakdown.get('passingInterceptions', 0)
-                
-                average_data['Season Average TD:INT Ratio'] = round(
-                    (tds / ints) if ints != 0 else tds, 2
-                )
+            average_data['Season Average Catch Rate Percentage'] = round(
+                (receptions / targets) if targets != 0 else 0, 2
+            )
+        
+        elif position == 'QB':
+            tds = breakdown.get('passingTouchdowns', 0)
+            ints = breakdown.get('passingInterceptions', 0)
+            
+            average_data['Season Average TD:INT Ratio'] = round(
+                (tds / ints) if ints != 0 else tds, 2
+            )
         return average_data
     
    
