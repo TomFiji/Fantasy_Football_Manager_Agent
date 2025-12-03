@@ -11,10 +11,10 @@ from utils.shared_tools import get_current_week, get_player_recent_performance, 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from supabase_client import supabase
 sys.path.append(os.path.join(os.path.dirname(__file__), './positional_agents/'))
-from positional_agents.WR_Agent import wr_agent, wr_runner, wr_list
-from positional_agents.RB_Agent import rb_agent, rb_runner, rb_list
-from positional_agents.TE_Agent import te_agent, te_runner, te_list
-from positional_agents.QB_Agent import qb_agent, qb_runner, qb_list
+from positional_agents.WR_Agent import wr_agent, wr_list
+from positional_agents.RB_Agent import rb_agent, rb_list
+from positional_agents.TE_Agent import te_agent, te_list
+from positional_agents.QB_Agent import qb_agent, qb_list
 
 load_dotenv()
 
@@ -51,6 +51,10 @@ retry_config = types.HttpRetryOptions(
 
 USER_ID = "fantasy_mgr_user"
 
+# Create individual runners for each agent
+wr_runner = InMemoryRunner(agent=wr_agent, app_name='agents')
+rb_runner = InMemoryRunner(agent=rb_agent, app_name='agents')
+te_runner = InMemoryRunner(agent=te_agent, app_name='agents')
 
 # all_players = wr_list + rb_list + te_list + qb_list
 # print("📥 Caching player stats for all positions...")
@@ -58,87 +62,78 @@ USER_ID = "fantasy_mgr_user"
 #     """Pre-cache stats for all positions to speed up analysis"""
 #     post_week_stats(player, player['position'])
     
-async def run_agent_query(runner, query: str, user_id: str, session_id: str) -> str:
+async def run_agent_query(runner, query: str, session_id: str) -> str:
     """
-    Guarantees the session exists or is created before running the agent.
+    Run agent query using run_debug which handles sessions automatically.
     """
-    
-    # 1. Ensure the session exists (using runner's internal session_service)
-    try:
-        session = runner.session_service.get_session(
-            app_name='agents', 
-            user_id=user_id, 
-            session_id=session_id
-        )
-    except ValueError:
-        # Session not found: CREATE it
-        session = runner.session_service.create_session(
-            app_name='agents', 
-            user_id=user_id, 
-            session_id=session_id
-        )
-        
-    # 2. Run the agent using the guaranteed session object
-    new_message_content = types.Content(role='user', parts=[types.Part(text=query)])
-    
-    # You would then call a low-level method using the session object
-    # The exact method here is dependent on your ADK version.
-    
-    # This is often the correct method, where the session is passed as an argument:
-    final_response_text = ""
-    
-    # --- FIX 3: Revert the runner call to only use IDs ---
-    # The session object is NOT passed here.
-    async for event in runner.run_async(
-        user_id=user_id,
+    events = await runner.run_debug(
+        user_messages=query,
         session_id=session_id,
-        new_message=new_message_content
-    ):
-        if event.is_final_response() and event.content and event.content.parts:
-            final_response_text = event.content.parts[0].text
-            break 
+        quiet=True
+    )
 
-    return final_response_text   
+    # Extract the final response from events
+    for event in reversed(events):
+        if event.is_final_response() and event.content and event.content.parts:
+            return event.content.parts[0].text
+
+    return ""   
     
 async def analyze_positions():
     """Run all position agents and collect their rankings"""
     print("🏈 Analyzing positions...\n")
-    
+
+    # Generate unique session IDs for each task
     wr_session_id = str(uuid.uuid4())
     rb_session_id = str(uuid.uuid4())
     te_session_id = str(uuid.uuid4())
-    
+
     # Create tasks WITHOUT await
     print("Creating WR task...")
     wr_task = run_agent_query(
-        runner=wr_runner, 
+        runner=wr_runner,
         query="Rank all WRs with detailed grades and reasoning",
-        user_id=USER_ID,
         session_id=wr_session_id
         )
+    print("✅ WR Task Complete.")
     
+    # PAUSE
+    print("😴 Pausing 30 seconds for API quota reset...")
+    await asyncio.sleep(30)
+
     print("Creating RB task...")
     rb_task = run_agent_query(
         runner=rb_runner,
         query="Rank all RBs with detailed grades and reasoning",
-        user_id=USER_ID,
         session_id=rb_session_id
         )
+    print("✅ RB Task Complete.")
     
+    # PAUSE
+    print("😴 Pausing 30 seconds for API quota reset...")
+    await asyncio.sleep(30)
+
     print("Creating TE task...")
     te_task = run_agent_query(
         runner=te_runner,
         query="Rank all TEs with detailed grades and reasoning",
-        user_id=USER_ID,
         session_id=te_session_id
         )
+    
+    print("✅ TE Task Complete.")
+    
+    # PAUSE
+    print("😴 Pausing 30 seconds for API quota reset...")
+    await asyncio.sleep(30)
     
     print("Waiting for all tasks to complete...")
     # Wait for all to complete
     try:
         wr_result, rb_result, te_result = await asyncio.gather(wr_task, rb_task, te_task)
     except Exception as e:
+        import traceback
         print(f"An error occurred during concurrent agent execution: {e}")
+        print(f"Full traceback:\n{traceback.format_exc()}")
         # Handle exceptions appropriately, perhaps by returning an error message
         return {'error': str(e)}
     
