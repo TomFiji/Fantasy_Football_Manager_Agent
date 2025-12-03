@@ -48,7 +48,7 @@ current_week = get_current_week()
 te_agent = LlmAgent(
     name="te_agent",
     model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
-    instruction=f"""You are the tight end coordinator of my fantasy football team. Your goal is to choose the best option.
+    instruction=f"""You are the tight end coordinator of my fantasy football team. Your goal is to choose ONLY ONE best option.
     
     For **EACH** player in the {te_list}:
     1. Retrieve the player's core season metrics: Call 'get_aggregate_stats' and 'get_average_stats' using the value found in player_id and position='TE' as the parameters to access the data
