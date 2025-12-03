@@ -164,3 +164,10 @@ if __name__ == "__main__":
     print("TE RANKINGS:")
     print("="*60)
     print(result['te'])
+
+#TO DO LIST TOMORROW
+# 1. Implement QB into analyze_stats
+# 2. Take all the starts from each JSON and add to a starting_squad list
+# 3. Create flex agent to analyze all SIT candidates
+# 4. Flex agent needs to pick one option and add it to starting_squad list
+# 5. Look into AI agent consistency for each position
