@@ -48,7 +48,7 @@ current_week = get_current_week()
 
 qb_agent = LlmAgent(
     name="qb_agent",
-    model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
+    model=Gemini(model="gemini-2.5-flash", retry_options=retry_config, temperature=0.0),
     instruction=f"""You are the quarterback coordinator of my fantasy football team. Your goal is to choose the best option.
     
     For **EACH** player in {qb_list}:
@@ -60,22 +60,24 @@ qb_agent = LlmAgent(
     5. Analyze ALL retrieved data (stats, opponents' rank, and web search results) and assign a grade from 0-100.
 
     
-   **Output Format**
-    **MUST BE IN VALID JSON FORMAT**
-    {{
-        'rankings':[
-            {{
-                'rank': 'rank out of all the players',
-                'player_name': 'player name',
-                'player_id': 'player id',
-                'player_grade': 'player grade',
-                'recommendation': 'START or SIT',
-                'opponent': 'opponent team name',
-                'opponent ranking against QB': 'opponent ranking'
-                'reasoning': 'reasoning'
-            }}
-        ]
-    }}
+    **Output Format**
+    **MUST BE IN VALID JSON ARRAY FORMAT WITH NO MARKDOWN FORMATTING OR CODE BLOCKS**      
+    Return a JSON array containing ALL players:
+    [
+        {{
+
+            "rank": 'rank out of all the players',
+            "player_name": 'player name',
+            "player_id": 'player id',
+            "player_grade": 'player grade',
+            "recommendation": 'START or SIT',
+            "opponent": 'opponent team name',
+            "opponent_ranking_against_QB": 'opponent ranking'
+            "reasoning": 'reasoning'
+
+        }}
+    ]
+    DO NOT output this array more than once. Return ONLY the JSON array with no additional text before or after.
     """,
     tools=[
         FunctionTool(get_current_week),

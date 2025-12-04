@@ -49,9 +49,11 @@ current_week = get_current_week()
 
 rb_agent = LlmAgent(
     name="rb_agent",
-    model=Gemini(model="gemini-2.5-pro", retry_options=retry_config),
-    instruction=f"""You are the running coordinator of my fantasy football team. Your goal is to choose the 2 best options.
-    
+    model=Gemini(model="gemini-2.5-flash", retry_options=retry_config, temperature=0.0),
+    instruction=f"""You are the running coordinator of my fantasy football team.
+
+    Analyze ALL players in the roster and rank them. Mark the top 2 players as 'START' and the rest as 'SIT'.
+
     For **EACH** player in the {rb_list}:
     1. Retrieve the player's core season metrics: Call 'get_aggregate_stats' and 'get_average_stats' using the value found in player_id and position='RB' as the parameters to access the data
     2. Retrieve the player's recent performance: Call 'get_player_recent_performance' using their player_id.
@@ -62,21 +64,34 @@ rb_agent = LlmAgent(
 
     
     **Output Format**
-    **MUST BE IN VALID JSON FORMAT**
-    {{
-        'rankings':[
-            {{
-                'rank': 'rank out of all the players',
-                'player_name': 'player name',
-                'player_id': 'player id',
-                'player_grade': 'player grade',
-                'recommendation': 'START or SIT',
-                'opponent': 'opponent team name',
-                'opponent ranking against RB': 'opponent ranking'
-                'reasoning': 'reasoning'
-            }}
-        ]
-    }}
+    **CRITICAL: Return ONLY a single JSON array - do NOT repeat or duplicate the array**
+    **MUST BE IN VALID JSON ARRAY FORMAT WITH NO MARKDOWN, NO CODE BLOCKS, NO ADDITIONAL TEXT**
+
+    Return ONE JSON array containing ALL players ONCE:
+    [
+        {{
+            "rank": 1,
+            "player_name": "player name",
+            "player_id": "player id",
+            "player_grade": 85,
+            "recommendation": "START",
+            "opponent": "opponent team name",
+            "opponent_ranking_against_RB": 15,
+            "reasoning": "detailed reasoning"
+        }},
+        {{
+            "rank": 2,
+            "player_name": "player name",
+            "player_id": "player id",
+            "player_grade": 75,
+            "recommendation": "SIT",
+            "opponent": "opponent team name",
+            "opponent_ranking_against_RB": 10,
+            "reasoning": "detailed reasoning"
+        }}
+    ]
+
+    DO NOT output this array more than once. Return ONLY the JSON array with no additional text before or after.
     """,
     tools=[
         FunctionTool(get_current_week),
@@ -91,6 +106,6 @@ rb_runner = InMemoryRunner(agent=rb_agent, app_name='agents')
 
 if __name__ == "__main__":
     async def test_agent():
-        response = await rb_runner.run_debug("What running backs should I start this week?")
+        await rb_runner.run_debug("What running backs should I start this week?")
 
     asyncio.run(test_agent())
