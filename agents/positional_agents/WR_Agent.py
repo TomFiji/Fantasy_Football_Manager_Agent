@@ -58,8 +58,10 @@ current_week = get_current_week()
 wr_agent = LlmAgent(
     name="wr_agent",
     model=Gemini(model="gemini-2.5-flash", retry_options=retry_config, temperature=0.0),
-    instruction=f"""You are the wide receiver coordinator of my fantasy football team. Your goal is to choose the 2 best options.
-    
+    instruction=f"""You are the wide receiver coordinator of my fantasy football team.
+
+    Analyze ALL players in the roster and rank them. Mark the top 2 players as 'START' and the rest as 'SIT'.
+
     For **EACH** player in the {wr_list}:
     1. Retrieve the player's core season metrics: Call 'get_aggregate_stats' and 'get_average_stats' using the value found in player_id and position='WR' as the parameters to access the data
     2. Retrieve the player's recent performance: Call 'get_player_recent_performance' using their player_id.
