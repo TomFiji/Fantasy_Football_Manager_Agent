@@ -83,7 +83,7 @@ coordinator_agent = LlmAgent(
 You will receive text analysis from position agents (WR, RB, TE, QB).
 
 Your job: Extract which players they recommended to START vs SIT.
-Put the top 3 players with recommendation: SIT into flex_candidate list based on their player_grade
+Put the top 3 players with recommendation: SIT into flex_candidate list based on their player_grade. A quarterback can not be a flex candidate.
 
 Output ONLY valid JSON:
 {
@@ -114,9 +114,9 @@ async def analyze_positions():
     await asyncio.sleep(30)
     rb_result = await rb_runner.run_debug("What running backs should I start?")
     await asyncio.sleep(30)
-    te_result = await te_runner.run_debug("What tight end should I start?")
+    te_result = await te_runner.run_debug("What tight end should I start? I can only start one")
     await asyncio.sleep(30)
-    qb_result = await qb_runner.run_debug("What quarterback should I start?")
+    qb_result = await qb_runner.run_debug("What quarterback should I start? I have to start one and only one.")
     await asyncio.sleep(30)
     
     
