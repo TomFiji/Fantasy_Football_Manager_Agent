@@ -78,27 +78,38 @@ qb_runner = InMemoryRunner(agent=qb_agent, app_name='agents')
 coordinator_agent = LlmAgent(
     name="lineup_coordinator",
     model=Gemini(model="gemini-2.5-flash"),
-    instruction="""You are the lineup coordinator.
+    instruction="""You are the lineup coordinator for my fantasy football team.
 
-You will receive text analysis from position agents (WR, RB, TE, QB).
+ROSTER FORMAT:
+- 2 WR starters, 2 RB starters, 1 TE starter, 1 QB starter
+- 1 FLEX spot (WR/RB/TE only)
 
-Your job: Extract which players they recommended to START vs SIT.
-Put the top 3 players with recommendation: SIT into flex_candidate list based on their player_grade. A quarterback can not be a flex candidate.
+INPUT:
+You will receive text analysis from position agents (WR, RB, TE, QB). Each agent provides player names and projected points.
 
-Output ONLY valid JSON:
+YOUR JOB:
+1. Identify the TOP-SCORING players for each position → assign to starters
+2. From remaining WR/RB/TE players, select the 3 highest-scoring → assign to flex_candidates
+3. Summarize each agent's reasoning in 3-4 sentences (include key stats if mentioned)
+
+OUTPUT RULES:
+- Output ONLY valid JSON (no extra text before/after)
+- Use exact player names from the input
+- If a position has fewer players than starter slots, leave remaining slots empty ([])
+- Flex candidates MUST NOT include starters or QBs
+- Each position MUST have at least 1 starter, not empty lists allowed
+
+JSON FORMAT:
 {
-    "wr_starters": ['Player Name 1: Reasoning', 'Player Name 2: Reasoning'],
-    "rb_starters": ['Player Name 1: Reasoning', 'Player Name 2: Reasoning'],
-    "te_starters": ['Player Name 1: Reasoning'],
-    "qb_starters": ['Player Name 1: Reasoning']
-    "flex_candidate":['Player Name 1: Reasoning', 'Player Name 2: Reasoning', 'Player Name 3: Reasoning']
+    "qb_starters": ["Player Name: Reasoning"],
+    "rb_starters": ["Player Name 1: Reasoning", "Player Name 2: Reasoning"],
+    "wr_starters": ["Player Name 1: Reasoning", "Player Name 2: Reasoning"],
+    "te_starters": ["Player Name: Reasoning"],
+    "flex_candidates": ["Player Name 1: Reasoning", "Player Name 2: Reasoning", "Player Name 3: Reasoning"]
 }
 
-Rules:
-- Extract exact player names from the text
-- starters = players recommended to START
-- flex_candidates = players recommended to SIT
-- Do not add analysis or reasoning, just the JSON
+TIEBREAKER:
+If two players have identical scores, prioritize the one with higher confidence from the agent.
 """,
     tools=[]  # ← NO TOOLS! Just text parsing
 )
@@ -156,13 +167,21 @@ Extract the player names and output the JSON.
     
     # Parse JSON
     try:
+        # Extract text from Event object
+        if isinstance(lineup_json, list) and len(lineup_json) > 0:
+            # Get the text from the Event object
+            event = lineup_json[0]
+            lineup_text = event.content.parts[0].text
+        else:
+            lineup_text = str(lineup_json)
+
         # Strip markdown if present
-        if "```json" in lineup_json:
-            lineup_json = lineup_json.split("```json")[1].split("```")[0].strip()
-        elif "```" in lineup_json:
-            lineup_json = lineup_json.split("```")[1].split("```")[0].strip()
-        
-        lineup_data = json.loads(lineup_json)
+        if "```json" in lineup_text:
+            lineup_text = lineup_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in lineup_text:
+            lineup_text = lineup_text.split("```")[1].split("```")[0].strip()
+
+        lineup_data = json.loads(lineup_text)
         return lineup_data
     except Exception as e:
         print(f"❌ Failed to parse coordinator output: {e}")

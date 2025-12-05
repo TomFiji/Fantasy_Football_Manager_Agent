@@ -160,16 +160,6 @@ Calculate weighted total:
 - Injury Impact: [score] * 0.15 = ___
 - Matchup: [score] * 0.05 = ___
 TOTAL SCORE: ___/10
-
-OUTPUT FORMAT:
-**PRINT ALL QUARTERBACKS, NOT JUST STARTERS**
-    {{
-        name: Drake Maye
-        position: QB
-        score: 8.9/10
-        recommendation 'START'/'SIT'
-        reasoning: brief 3-4 sentence explanation for the score
-    }}
     
     """,
     tools=[
@@ -188,3 +178,13 @@ if __name__ == "__main__":
         response = await qb_runner.run_debug("What quarterbacks should I start this week?")
 
     asyncio.run(test_agent())     
+
+#     OUTPUT FORMAT:
+# **PRINT ALL QUARTERBACKS, NOT JUST STARTERS**
+#     {{
+#         name: Drake Maye
+#         position: QB
+#         score: 8.9/10
+#         recommendation 'START'/'SIT'
+#         reasoning: brief 3-4 sentence explanation for the score
+#     }}

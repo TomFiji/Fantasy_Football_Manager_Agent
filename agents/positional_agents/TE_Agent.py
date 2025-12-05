@@ -70,6 +70,7 @@ Use your tools to collect all necessary information:
    - Current injury report for the player's team (search: "[team name] injury report wide receivers tight ends")
 
 STEP 2 - RECENT FORM ANALYSIS (40% weight)
+**IGNORE WEEKS WITH 0 IN ALL STATS AS THE PLAYER WAS MOST LIKELY INJURED OR ON BYE AND USE PREVIOUS WEEKS BEFORE**
 
 From get_player_recent_performance(), extract last 3 weeks:
 - Week -3: targets, receptions, receiving yards, touchdowns, yards after catch
