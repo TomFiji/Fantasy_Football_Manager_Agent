@@ -1,23 +1,21 @@
+# ESPN Fantasy Football API
 espn-api==0.32.0
-google-genkit
-python-dotenv
-requests
-```
 
-### **.gitignore**
-```
-# Virtual environment
-venv/
-env/
+# Google AI and Agent Development Kit
+google-genai
+google-adk
+
+# MCP (Model Context Protocol) tools
+mcp
+
+# Database
+supabase
+
+# Web Search
+googlesearch-python
 
 # Environment variables
-.env
+python-dotenv
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# IDE
-.vscode/
-.idea/
+# HTTP requests (dependency for espn-api and other packages)
+requests

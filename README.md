@@ -18,6 +18,64 @@ This project deploys specialized AI agents for each fantasy-relevant position (Q
 - **Real-Time Data Integration**: Pulls live stats, injury reports, and defensive rankings
 - **Actionable Insights**: Concise takeaways for fantasy decision-making
 
+### Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/tomfiji/Fantasy_Football_Manager_Agent
+```
+
+2. Create virtual environment and install all dependencies
+```bash
+cd C:/Users/username/projects/Fantasy_Football_Manager_Agent
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+3. Set up environment variables
+
+Create a `.env` file in the backend directory:
+```
+SUPABASE_URL= your_supabase_project_url
+SUPABASE_ANON_KEY= your_supabase_project_anon_key
+SUPABASE_SERVICE_ROLE_KEY= your_supabase_project_role_key
+GOOGLE_API_KEY= your_gemini_api_key
+ESPN_LEAGUE_ID= your_espn_league_id
+ESPN_SWID_COOKIE= your_espn_swid_cookie
+ESPN_S2_COOKIE= your_espn_s2_cookie
+MY_TEAM_ID= your_team_id
+ESPN_CLIENT_PATH= your_directory_to_the_espn_client
+```
+
+4. Set up the database
+
+Create the following tables in your Supabase project:
+
+**player_weekly_stats:**
+```sql
+create table public.player_weekly_stats (
+  player_id integer not null,
+  player_name text not null,
+  week integer not null,
+  stats_breakdown jsonb not null,
+  points real null default 0,
+  cached_at timestamp without time zone null default CURRENT_TIMESTAMP,
+  constraint player_weekly_stats_pkey primary key (player_id, week)
+) TABLESPACE pg_default;
+
+create index IF not exists idx_player_week on public.player_weekly_stats using btree (player_id, week) TABLESPACE pg_default;
+
+create index IF not exists idx_stats_breakdown on public.player_weekly_stats using gin (stats_breakdown) TABLESPACE pg_default;
+```
+
+5. Run the application
+```bash
+*/venv/Scripts/python.exe
+```
+
+Visit `http://localhost:5173` to see the app.
+
 ## 🏗️ System Architecture
 
 ### Agent Weighting Framework
@@ -427,17 +485,20 @@ The system aims to provide:
 - **Actionability**: Confidence ratings drive start/sit decisions
 - **Accuracy**: Data-driven projections with contextual awareness
 
-## 🤝 Contributing
+## 🎓 What I Learned
 
-This is a framework-driven project. To maintain consistency:
-- Follow the established weighting system (40-40-15-5)
-- Use standardized tier thresholds
-- Maintain structured output format
-- Document any modifications to scoring logic
+- **AI Agent Prompting**: My initial prompt wouldn't output a consistent result so after multiple trial and errors I finished with the formula currently implemented
+- **Multi Agent Architecture**: Implemented multiple agents knowing that there was going to be one lineup agent that processed all their data into a starting lineup and flex position candidates
+- **Google's Agent Development Kit**: I had to read documentation and dig into different methods to debug and solve problems with AI output and agent errors
 
-## 📄 License
 
-This project is designed for fantasy football analysis and research purposes.
+
+## 👤 Author
+
+**Tom Fijalkowski**
+- GitHub: [@TomFiji](https://github.com/tomfiji)
+- LinkedIn: [Tom Fijalkowski](https://linkedin.com/in/tom-fijalkowski)
+- Email: tf.tomfijalkowski@gmail.com
 
 ---
 
