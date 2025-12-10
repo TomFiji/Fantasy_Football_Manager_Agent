@@ -18,7 +18,7 @@ This project deploys specialized AI agents for each fantasy-relevant position (Q
 - **Real-Time Data Integration**: Pulls live stats, injury reports, and defensive rankings
 - **Actionable Insights**: Concise takeaways for fantasy decision-making
 
-### Installation
+## Installation
 
 1. Clone the repository
 ```bash
@@ -74,7 +74,6 @@ create index IF not exists idx_stats_breakdown on public.player_weekly_stats usi
 */venv/Scripts/python.exe
 ```
 
-Visit `http://localhost:5173` to see the app.
 
 ## 🏗️ System Architecture
 
@@ -129,11 +128,19 @@ All position agents use the same weighting system to ensure consistency:
 
 #### Wide Receiver Stats
 **Weekly/Season Totals:**
-- Receptions, Targets, Receiving Yards
-- Touchdowns (by yardage range: 0-9, 10-19, 20-29, 30-39, 50+)
-- Yards After Catch, First Downs
-- Catch Rate Percentage, Fantasy Points per Target
-- Milestone Bonuses (Every 5/10 receptions)
+- Receptions
+- Targets
+- Receiving Yards
+- Touchdowns
+- Yards After Catch
+- First Downs
+- Touchdowns with 0-9 Yard Reception
+- Touchdowns with 10-19 Yard Reception
+- Touchdowns with 20-29 Yard Reception
+- Touchdowns with 30-39 Yard Reception
+- Touchdowns with 50+ Yard Reception
+- Every 5 Receptions
+- Every 10 Receptions
 
 **Season Averages:**
 - Per-game metrics for all above stats
@@ -142,11 +149,21 @@ All position agents use the same weighting system to ensure consistency:
 
 #### Running Back Stats
 **Weekly/Season Totals:**
-- Rushing Attempts, Rushing Yards, Rushing Touchdowns
-- Receptions, Targets, Receiving Yards, Receiving Touchdowns
-- Yards After Catch, First Downs, Fumbles
-- 100-199 yard games, 200+ yard games
-- 50+ yard rushing TDs
+- Rushing Attempts
+- Rushing Yards Per Attempt
+- Receptions
+- Targets
+- Rushing Yards
+- Receiving Touchdowns
+- Rushing Touchdowns
+- Yards After Catch
+- Fumbles
+- First Downs
+- 100-199 Rushing Yard Game
+- 200+ Rushing Yard Game
+- Touchdowns with 50+ Yards Rushing
+- Every 5 Receptions
+- Every 10 Receptions
 
 **Season Averages:**
 - Per-game metrics for rushing and receiving
@@ -155,24 +172,44 @@ All position agents use the same weighting system to ensure consistency:
 
 #### Quarterback Stats
 **Weekly/Season Totals:**
-- Passing: Attempts, Completions, Yards, Touchdowns, Interceptions
-- Rushing: Attempts, Yards, Touchdowns, Yards per Attempt
-- Completion Percentage, Times Sacked
-- Turnovers, Fumbles, First Downs
-- 2-Point Conversions (passing and rushing)
-
-**Season Averages:**
-- Per-game metrics for all passing/rushing stats
+- Passing Attempts
+- Passing Completions
+- Passing Completion Percentage
+- Passing Yards
+- Passing Touchdowns
+- Passing 2 Point Conversions
+- Rushing 2 Point Conversions
+- Passing Interceptions
+- Times Sacked Passing
+- Passing Fumbles
+- Turnovers
+- Passing First Downs
+- Rush Attempts
+- Rushing Yards
+- Rushing Touchdowns
+- Rushing Yards Per Attempt
 - 300-399 and 400+ yard game frequency
 - Completion milestone bonuses
 
+**Season Averages:**
+- Per-game metrics for all passing/rushing stats
+
+
 #### Tight End Stats
 **Weekly/Season Totals:**
-- Receptions, Targets, Receiving Yards, Touchdowns
-- Yards After Catch, First Downs
-- Fumbles (total, receiving, lost)
-- 100-199 yard games
-- 2-Point Conversions
+- Receptions
+- Targets
+- Receiving Yards
+- Touchdowns
+- Yards After Catch
+- Receiving First Downs
+- Receiving 2 Point Conversions
+- Fumbles
+- Receiving Fumbles
+- Receiving Fumbles Lost
+- Rushing Attempts
+- Rushing Yards
+- Rushing Touchdowns
 
 **Season Averages:**
 - Per-game metrics for all receiving stats
